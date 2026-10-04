@@ -1,0 +1,68 @@
+/* Farm horizon + drifting leaves (garden.js). Tinted from the olive accent, so it follows the theme. */
+
+:root {
+  --g-hill-back: color-mix(in srgb, var(--accent) 9%, var(--bg));
+  --g-hill-front: color-mix(in srgb, var(--accent) 14%, var(--bg));
+  --g-tree-far: color-mix(in srgb, var(--accent) 16%, var(--bg));
+  --g-tree-near: color-mix(in srgb, var(--accent) 24%, var(--bg));
+  --g-leaf: color-mix(in srgb, var(--accent) 45%, var(--bg));
+}
+
+.garden-field {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: -1;
+  height: clamp(110px, 18vh, 190px);
+  pointer-events: none;
+  animation: g-rise 1.4s var(--ease) both;
+}
+.garden-field svg { width: 100%; height: 100%; display: block; }
+.g-hill.back { fill: var(--g-hill-back); }
+.g-hill.front { fill: var(--g-hill-front); }
+.g-tree.far { fill: var(--g-tree-far); }
+.g-tree.near { fill: var(--g-tree-near); }
+.g-sway { transform-box: fill-box; transform-origin: 50% 100%; animation: g-sway 7s ease-in-out infinite alternate; }
+.g-grass { stroke: var(--g-tree-near); stroke-width: 1.4; stroke-linecap: round; fill: none; }
+.g-blade { transform-box: fill-box; transform-origin: 50% 100%; animation: g-sway 4.5s ease-in-out infinite alternate; }
+
+@keyframes g-sway { from { transform: rotate(-1.6deg); } to { transform: rotate(1.6deg); } }
+@keyframes g-rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+
+.garden-leaves { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+.g-leaf {
+  position: absolute; top: -40px;
+  width: var(--size); height: var(--size);
+  color: var(--g-leaf); opacity: 0;
+  animation: g-fall linear infinite;
+}
+.g-leaf svg { width: 100%; height: 100%; display: block; }
+.g-leaf path { fill: currentColor; }
+.g-leaf .vein { fill: none; stroke: var(--bg); stroke-width: 1.2; opacity: 0.6; }
+@keyframes g-fall {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+  8% { opacity: 0.55; }
+  50% { transform: translate(calc(var(--drift) * 0.6), 50vh) rotate(calc(var(--spin) * 0.5)); }
+  85% { opacity: 0.4; }
+  100% { transform: translate(var(--drift), 105vh) rotate(var(--spin)); opacity: 0; }
+}
+
+/* Live tours need focus: no scenery. */
+body.is-live .garden-field, body.is-live .garden-leaves { display: none; }
+
+/* Hero sprig: an olive branch that draws itself under the headline. */
+.sprig { width: min(300px, 64vw); height: auto; margin: -6px auto 0; display: block; overflow: visible; }
+.sprig .stem { fill: none; stroke: var(--accent); stroke-width: 1.6; stroke-linecap: round; stroke-dasharray: 320; stroke-dashoffset: 320; animation: g-draw 1.6s 0.5s var(--ease) forwards; }
+.sprig .lf { fill: var(--accent); opacity: 0; transform-box: fill-box; transform-origin: 0% 50%; animation: g-leaf-in 0.6s var(--ease) forwards; }
+.sprig .lf.alt { fill: color-mix(in srgb, var(--accent) 55%, var(--bg)); }
+.sprig .olive { fill: color-mix(in srgb, var(--ink) 75%, var(--accent)); opacity: 0; transform-box: fill-box; transform-origin: center; animation: g-pop 0.5s var(--ease) forwards; }
+@keyframes g-draw { to { stroke-dashoffset: 0; } }
+@keyframes g-leaf-in { from { opacity: 0; transform: scale(0.2) rotate(-20deg); } to { opacity: 0.9; transform: none; } }
+@keyframes g-pop { from { opacity: 0; transform: scale(0); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .garden-leaves { display: none; }
+  .g-sway, .g-blade { animation: none; }
+  .sprig .stem { stroke-dashoffset: 0; animation: none; }
+  .sprig .lf, .sprig .olive { opacity: 0.9; animation: none; }
+}
+
+/* The page background lives on <html>, so the scenery (z-index -1) shows through <body>. */
+body[data-garden] { background: transparent; }

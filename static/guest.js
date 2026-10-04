@@ -10,7 +10,7 @@
   let mic = null;
   const earlier = [];
 
-  NG.fillLanguageSelect($("myLang"), { includeAuto: true, autoLabel: "Auto" });
+  NG.fillLanguageSelect($("myLang"), { includeAuto: true, autoLabel: "Automatic" });
   try {
     myLang = localStorage.getItem("noor-guide.guest-lang") || "";
   } catch {
@@ -19,7 +19,32 @@
   $("myLang").value = myLang;
 
   const profile = await (await fetch("/api/profile")).json();
-  $("farmName").firstChild.textContent = profile.business_name || "Welcome";
+  $("farmName").textContent = profile.business_name || "Welcome";
+
+  // ---------- Welcome: pick a language, and the Start tap unlocks speech on mobile ----------
+  NG.fillLanguageSelect($("welcomeLang"), { includeAuto: true, autoLabel: "Same as the tour (automatic)" });
+  $("welcomeLang").value = myLang;
+  let welcomed = false;
+  try {
+    welcomed = sessionStorage.getItem("noor-guide.welcomed") === "1";
+  } catch {
+    /* private mode */
+  }
+  $("welcomeTitle").textContent = profile.business_name ? `Welcome to ${profile.business_name}` : "Welcome";
+  $("welcome").classList.toggle("hidden", welcomed);
+  function closeWelcome(withSound) {
+    $("myLang").value = $("welcomeLang").value;
+    $("myLang").onchange();
+    if (withSound && !soundOn) $("soundBtn").onclick();
+    $("welcome").classList.add("hidden");
+    try {
+      sessionStorage.setItem("noor-guide.welcomed", "1");
+    } catch {
+      /* private mode */
+    }
+  }
+  $("welcomeStart").onclick = () => closeWelcome(true);
+  $("welcomeQuiet").onclick = () => closeWelcome(false);
 
   const ws = NG.connect("guest", onMessage, (open) => {
     if (open && myLang) ws.send({ type: "guest_language", lang: myLang });
@@ -41,6 +66,8 @@
       } catch {
         /* show English */
       }
+      // The language changed while we waited: a newer render owns the grid.
+      if (lang !== (myLang || state.guest_lang)) return;
     }
     const grid = $("tapGrid");
     grid.innerHTML = "";
@@ -53,7 +80,7 @@
         ws.send({ type: "guest_text", text: en, source: "tap", lang: "en" });
         b.classList.add("sent");
         setTimeout(() => b.classList.remove("sent"), 1500);
-        addSent(`👆 “${labels[i]}”`);
+        addSent(`“${labels[i]}”`, "hand");
       };
       grid.append(b);
     });
@@ -81,9 +108,9 @@
 
   $("soundBtn").onclick = () => {
     soundOn = !soundOn;
-    $("soundBtn").textContent = soundOn ? "🔊 Sound on" : "🔇 Sound off";
-    $("soundBtn").classList.toggle("accent", !soundOn);
+    $("soundBtn").innerHTML = `${NG.icon(soundOn ? "volume" : "mute")}<span>${soundOn ? "Sound on" : "Turn on sound"}</span>`;
     $("soundBtn").classList.toggle("on", soundOn);
+    $("soundBtn").setAttribute("aria-pressed", String(soundOn));
     // A user gesture unlocks speech synthesis on mobile browsers.
     if (soundOn) window.speechSynthesis?.speak(new SpeechSynthesisUtterance(""));
     else window.speechSynthesis?.cancel();
@@ -104,8 +131,7 @@
     if (mic) {
       mic.stop();
       mic = null;
-      $("guestMic").textContent = "🎙 Start speaking";
-      $("guestMic").classList.remove("on");
+      setGuestMic(false);
       return;
     }
     if (!state.running) return NG.toast("The tour has not started yet.");
@@ -119,12 +145,19 @@
         if (window.speechSynthesis?.speaking) quietUntil = now + 600;
         if (now >= quietUntil) ws.sendBinary(pcm);
       });
-      $("guestMic").textContent = "■ Stop";
-      $("guestMic").classList.add("on");
+      setGuestMic(true);
     } catch (err) {
       NG.toast(`Microphone unavailable: ${err.message}`);
     }
   };
+
+  function setGuestMic(on) {
+    $("guestMic").classList.toggle("on", on);
+    $("guestMic").setAttribute("aria-pressed", String(on));
+    $("guestMic").setAttribute("aria-label", on ? "Stop" : "Start speaking");
+    $("guestMic").querySelector(".big-mic-ico").innerHTML = NG.icon(on ? "stop" : "mic");
+    $("guestMicLabel").textContent = on ? "Listening… tap when you're done" : "Tap the button, then ask";
+  }
 
   // ---------- Type ----------
   $("typeForm").onsubmit = (e) => {
@@ -175,7 +208,7 @@
         const t = blink.decoder.timing;
         ring.style.setProperty("--p", Math.min(1, p.ms / t.deleteMs));
         ring.style.setProperty("--c", p.as === "delete" ? "var(--danger)" : p.as === "dash" ? "var(--terra)" : "var(--olive)");
-        $("ringLabel").textContent = p.as === "ignored" ? "…" : p.as === "dot" ? "·" : p.as === "dash" ? "−" : "⌫";
+        $("ringLabel").innerHTML = p.as === "ignored" ? "…" : p.as === "dot" ? "·" : p.as === "dash" ? "−" : NG.icon("backspace");
       } else if (p.kind === "letter") {
         ring.style.setProperty("--p", p.progress);
         ring.style.setProperty("--c", "var(--sky)");
@@ -191,7 +224,7 @@
   function renderPending() {
     const code = blink?.decoder.buffer || "";
     $("pendingCode").textContent = B.prettyCode(code);
-    $("pendingPreview").textContent = code ? `→ ${B.previewFor(code)}` : "";
+    $("pendingPreview").innerHTML = code ? `${NG.icon("arrowRight")}${esc(B.previewFor(code))}` : "";
   }
 
   function renderBlink() {
@@ -206,21 +239,21 @@
     if (!raw) return;
     const { text, expanded } = B.expandShortcut(raw);
     sendText(text, "blink", "en");
-    addSent(expanded ? `👁 ${raw} → “${text}”` : `👁 “${text}”`);
+    addSent(expanded ? `${raw}: “${text}”` : `“${text}”`, "eye");
   }
 
   $("camBtn").onclick = async () => {
     ensureBlink();
     if (blink.cameraOn) {
       blink.stopCamera();
-      $("camBtn").textContent = "Start camera";
+      $("camBtn").querySelector("span").textContent = "Start camera";
       $("eyeState").textContent = "camera off";
       return;
     }
     $("camBtn").disabled = true;
     try {
       await blink.startCamera();
-      $("camBtn").textContent = "Stop camera";
+      $("camBtn").querySelector("span").textContent = "Stop camera";
     } catch (err) {
       NG.toast(`Camera unavailable: ${err.message}. Hold Space instead.`, 4000);
     } finally {
@@ -266,8 +299,10 @@
       if (msg.running && !state.running && myLang) ws.send({ type: "guest_language", lang: myLang });
       state = msg;
       $("tourStatus").textContent = msg.running ? "Tour in progress" : "Waiting for the tour to start…";
+      document.body.classList.toggle("tour-live", !!msg.running);
+      $("guideMuted").classList.toggle("hidden", !(msg.running && msg.guide_muted));
       const auto = $("myLang").options[0];
-      auto.textContent = msg.guest_lang ? `Auto (${NG.langName(msg.guest_lang)})` : "Auto";
+      auto.textContent = msg.guest_lang ? `Automatic (${NG.langName(msg.guest_lang)})` : "Automatic";
       refreshTapGrid();
     } else if (msg.type === "guest_line") {
       $("liveCap").classList.add("hidden");
@@ -286,7 +321,7 @@
       if (msg.entry.speaker === "guest" || !Object.keys(msg.entry.translations || {}).length) $("liveCap").classList.add("hidden");
     }
     if (msg.type === "transcript" && msg.entry.speaker === "guest" && msg.entry.source !== "blink" && msg.entry.source !== "tap") {
-      addSent(`${msg.entry.source === "typed" ? "⌨" : "🎙"} “${msg.entry.text}”`);
+      addSent(`“${msg.entry.text}”`, msg.entry.source === "typed" ? "keyboard" : "mic");
     } else if (msg.type === "tour_ended") {
       showText({ text: "Thank you for visiting. We hope to see you again.", bcp47: "en-US", rtl: false }, "");
     }
@@ -326,10 +361,10 @@
     $("nowOrig").textContent = original;
   }
 
-  function addSent(text) {
+  function addSent(text, iconName = "check") {
     const div = document.createElement("div");
     div.className = "item";
-    div.textContent = text;
+    div.innerHTML = `${NG.icon(iconName)}<span dir="auto">${esc(text)}</span>`;
     $("sentList").prepend(div);
     while ($("sentList").children.length > 4) $("sentList").lastChild.remove();
   }

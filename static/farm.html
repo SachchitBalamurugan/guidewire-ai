@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f7f5f0" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0e0e0c" media="(prefers-color-scheme: dark)">
+  <title>My farm · Guidewire</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/fonts/fonts.css">
+  <link rel="stylesheet" href="/static/theme.css">
+  <link rel="stylesheet" href="/static/farm.css">
+  <link rel="stylesheet" href="/static/garden.css">
+</head>
+<body class="page-farm" data-garden="field">
+  <header class="topbar">
+    <a class="brand" href="/"><span class="mark"><i data-icon="logo"></i></span><span class="brand-name">Guide<em>wire</em></span></a>
+    <nav class="nav" aria-label="Main">
+      <a href="/">Tour</a>
+      <a href="/farm" class="active" aria-current="page">My farm</a>
+      <a href="/insights">Results</a>
+    </nav>
+    <div class="topbar-actions">
+      <a class="btn secondary sm" href="/guest" target="_blank" rel="noopener" title="Open the guest screen"><i data-icon="tablet"></i><span class="hide-sm">Guest screen</span></a>
+    </div>
+  </header>
+
+  <main class="farm">
+    <section class="intro">
+      <h1 class="display">Your farm, <em>in your words.</em></h1>
+      <p class="lede">The helper only uses what you write here. It never makes up prices or facts. Fill in what you can; you can change it any time.</p>
+    </section>
+
+    <form id="farmForm" autocomplete="off">
+      <!-- Basics -->
+      <section class="block card">
+        <header class="block-head">
+          <span class="num">1</span>
+          <div><h2>About your farm</h2><p>The basics guests usually ask about.</p></div>
+        </header>
+        <div class="grid-2">
+          <label class="field"><span>Farm name</span><input type="text" data-key="business_name" placeholder="e.g. Noor's Olive & Herb Farm"></label>
+          <label class="field"><span>Your name</span><input type="text" data-key="operator_name" placeholder="e.g. Noor"></label>
+          <label class="field"><span>Where is it?</span><input type="text" data-key="location" placeholder="e.g. Ondera, Jordan Valley"></label>
+          <label class="field"><span>How long is the tour?</span><input type="text" data-key="tour_length" placeholder="e.g. about 2.5 hours"></label>
+        </div>
+        <label class="field"><span>Describe your farm in a few sentences</span><textarea data-key="description" rows="3" placeholder="What do visitors see and do?"></textarea></label>
+        <div class="grid-2">
+          <label class="field"><span>How do guests book?</span><textarea data-key="booking" rows="2" placeholder="e.g. Message us on WhatsApp a day ahead."></textarea></label>
+          <label class="field"><span>Currency</span><input type="text" data-key="currency" placeholder="e.g. JOD"></label>
+        </div>
+      </section>
+
+      <!-- Stops -->
+      <section class="block card">
+        <header class="block-head">
+          <span class="num">2</span>
+          <div><h2>Tour stops</h2><p>The places you take guests, in order. Add a few facts for each one.</p></div>
+        </header>
+        <div id="stops" class="list"></div>
+        <button type="button" class="btn secondary add-btn" id="addStop"><i data-icon="plus"></i>Add a stop</button>
+      </section>
+
+      <!-- Products -->
+      <section class="block card">
+        <header class="block-head">
+          <span class="num">3</span>
+          <div><h2>Things you sell</h2><p>The helper only mentions these prices, exactly as written.</p></div>
+        </header>
+        <div id="products" class="list"></div>
+        <button type="button" class="btn secondary add-btn" id="addProduct"><i data-icon="plus"></i>Add a product</button>
+      </section>
+
+      <!-- FAQ -->
+      <section class="block card">
+        <header class="block-head">
+          <span class="num">4</span>
+          <div><h2>Questions guests often ask</h2><p>Write the answer the way you would say it.</p></div>
+        </header>
+        <div id="faq" class="list"></div>
+        <button type="button" class="btn secondary add-btn" id="addFaq"><i data-icon="plus"></i>Add a question</button>
+      </section>
+
+      <!-- Lines -->
+      <section class="block card">
+        <header class="block-head">
+          <span class="num">5</span>
+          <div><h2>A few more things</h2><p>Write one item per line.</p></div>
+        </header>
+        <label class="field"><span>Special offers and extras</span><textarea data-lines="offers" rows="3" placeholder="e.g. Join the olive harvest on Saturdays in autumn."></textarea></label>
+        <label class="field"><span>Never say this</span><textarea data-lines="claims_not_to_make" rows="3" placeholder="e.g. Don't call the oil organic; it isn't certified."></textarea><small>The helper will avoid these, even if a guest asks.</small></label>
+        <label class="field"><span>Quick phrases</span><textarea data-lines="quick_phrases" rows="4" placeholder="e.g. Please follow me."></textarea><small>These show as one-tap buttons during the tour.</small></label>
+      </section>
+
+      <details class="advanced card">
+        <summary><span>Advanced: edit the raw data</span><span class="chev"></span></summary>
+        <p class="small muted">For technical users. Changes here replace the form above when you save.</p>
+        <textarea id="profileJson" rows="16" spellcheck="false" aria-label="Raw farm data"></textarea>
+      </details>
+    </form>
+  </main>
+
+  <div class="savebar" id="saveBar">
+    <span id="saveStatus" class="save-status">All changes saved</span>
+    <button class="btn primary" id="saveBtn" form="farmForm" type="submit" disabled>Save changes</button>
+  </div>
+
+  <script src="/static/common.js"></script>
+  <script src="/static/garden.js"></script>
+  <script src="/static/farm.js"></script>
+</body>
+</html>

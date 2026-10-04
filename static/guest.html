@@ -2,50 +2,88 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Guest Screen</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f7f5f0" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0e0e0c" media="(prefers-color-scheme: dark)">
+  <title>Guest screen · Guidewire</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/fonts/fonts.css">
   <link rel="stylesheet" href="/static/theme.css">
   <link rel="stylesheet" href="/static/guest.css">
+  <link rel="stylesheet" href="/static/garden.css">
 </head>
-<body>
-  <header class="topbar">
-    <div class="brand"><span class="leaf"></span><div id="farmName">Welcome<br><small id="tourStatus">Waiting for the tour to start…</small></div></div>
-    <div class="row guest-controls">
-      <label class="field inline">🌐<select id="myLang" aria-label="Your language"></select></label>
-      <button id="soundBtn" class="accent">🔇 Tap for sound</button>
+<body class="page-guest" data-garden="field">
+  <header class="topbar guest-bar">
+    <div class="brand">
+      <span class="mark"><i data-icon="logo"></i></span>
+      <span class="guest-brand">
+        <span id="farmName" class="farm-name">Welcome</span>
+        <span id="tourStatus" class="tour-status">Waiting for the tour to start…</span>
+      </span>
+    </div>
+    <span></span>
+    <div class="topbar-actions">
+      <label class="lang-pill" title="Your language">
+        <i data-icon="globe"></i>
+        <span class="select bare"><select id="myLang" aria-label="Your language"></select></span>
+      </label>
+      <button id="soundBtn" class="sound-btn" aria-pressed="false"><i data-icon="mute"></i><span>Turn on sound</span></button>
     </div>
   </header>
 
+  <div id="welcome" class="welcome hidden" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
+    <div class="welcome-card">
+      <span class="welcome-globe"><i data-icon="globe"></i></span>
+      <h1 class="display" id="welcomeTitle">Welcome</h1>
+      <p>Choose your language. Your guide's words will appear on this screen and be read aloud.</p>
+      <span class="select"><select id="welcomeLang" aria-label="Your language"></select></span>
+      <button class="btn primary lg" id="welcomeStart"><i data-icon="volume"></i>Start</button>
+      <button class="welcome-quiet" id="welcomeQuiet">Continue without sound</button>
+    </div>
+  </div>
+
   <main class="guest">
-    <section class="now card" aria-live="assertive">
-      <div class="row"><h2 id="nowLabel">Your guide says</h2><span class="spacer"></span><span id="guideMuted" class="chip hidden">🔇 Guide's microphone is paused</span></div>
-      <p id="nowText" class="now-text" dir="auto">…</p>
-      <p id="nowOrig" class="small muted" dir="auto"></p>
+    <section class="stage" aria-live="assertive">
+      <div class="stage-head">
+        <span class="speaker-dot"></span>
+        <h2 id="nowLabel">Your guide says</h2>
+        <span id="guideMuted" class="paused-chip hidden"><i data-icon="micOff"></i>Your guide's microphone is paused</span>
+      </div>
+      <p id="nowText" class="now-text display" dir="auto">…</p>
+      <p id="nowOrig" class="now-orig" dir="auto"></p>
       <p id="liveCap" class="live-cap hidden" dir="auto" aria-live="polite"></p>
       <ol id="earlier" class="earlier" reversed></ol>
     </section>
 
-    <section class="ask card">
-      <div class="tabs" role="tablist">
-        <button role="tab" data-tab="speak" class="on">🎙 Speak</button>
-        <button role="tab" data-tab="type">⌨ Type</button>
-        <button role="tab" data-tab="blink">👁 Blink</button>
+    <section class="ask card" aria-label="Ask your guide">
+      <div class="ask-head">
+        <h2>Ask your guide a question</h2>
+        <p>Use any language. Your guide will read it in theirs.</p>
+      </div>
+
+      <div class="tabs seg" role="tablist">
+        <button role="tab" data-tab="speak" class="on"><i data-icon="mic"></i>Talk</button>
+        <button role="tab" data-tab="type"><i data-icon="keyboard"></i>Write</button>
+        <button role="tab" data-tab="blink"><i data-icon="eye"></i>Blink</button>
       </div>
 
       <div class="tab" id="tab-speak">
-        <p class="muted">Ask your question in any language. Your guide sees it in their language.</p>
-        <button id="guestMic" class="primary big">🎙 Start speaking</button>
-        <p class="small muted">The tour microphone also hears you. Use this if you're far from the guide.</p>
+        <div class="speak-stage">
+          <button id="guestMic" class="big-mic" aria-pressed="false" aria-label="Start speaking">
+            <span class="ripple"></span><span class="ripple r2"></span>
+            <span class="big-mic-ico"><i data-icon="mic"></i></span>
+          </button>
+          <p class="speak-label" id="guestMicLabel">Tap the button, then ask</p>
+          <p class="speak-hint">Tap again when you're done. If you're standing near your guide, you can also just speak.</p>
+        </div>
       </div>
 
       <div class="tab hidden" id="tab-type">
-        <p class="small muted">Tap a question, or type your own.</p>
+        <p class="tab-hint">Tap a question to send it, or write your own below.</p>
         <div id="tapGrid" class="tap-grid"></div>
-        <form id="typeForm" class="col-form">
-          <textarea id="typeText" rows="3" placeholder="Type your question…" dir="auto"></textarea>
-          <button class="primary" type="submit">Send to guide</button>
+        <form id="typeForm" class="type-box">
+          <textarea id="typeText" rows="2" placeholder="Type your question…" dir="auto" aria-label="Your question"></textarea>
+          <button class="btn primary icon-only" type="submit" aria-label="Send to guide"><i data-icon="send"></i></button>
         </form>
       </div>
 
@@ -53,30 +91,38 @@
         <div class="blink-wrap">
           <div class="cam">
             <video id="cam" playsinline muted></video>
+            <div class="cam-empty"><i data-icon="camera"></i></div>
             <div id="eyeState" class="eye-state">camera off</div>
           </div>
           <div class="blink-panel">
             <div class="ring-row">
               <div class="ring" id="ring"><span id="ringLabel">·</span></div>
-              <div>
+              <div class="blink-text">
                 <div class="pending"><span id="pendingCode" class="code"></span> <span id="pendingPreview" class="preview"></span></div>
                 <div class="typed" id="typed" aria-live="polite"></div>
               </div>
             </div>
-            <div class="row">
-              <button id="camBtn" class="primary">Start camera</button>
-              <button id="calBtn">Calibrate</button>
-              <button id="blinkDemoBtn">Watch demo</button>
+            <div class="blink-actions">
+              <button id="camBtn" class="btn primary"><i data-icon="camera"></i><span>Start camera</span></button>
+              <button id="calBtn" class="btn secondary"><i data-icon="target"></i>Tune to my eyes</button>
+              <button id="blinkDemoBtn" class="btn secondary"><i data-icon="play"></i>Show me how</button>
             </div>
-            <div class="row">
-              <button id="blinkSend" class="accent">Send (·−·−·)</button>
-              <button id="blinkClear">Clear</button>
+            <div class="blink-actions">
+              <button id="blinkSend" class="btn accent"><i data-icon="send"></i>Send <span class="morse">·−·−·</span></button>
+              <button id="blinkClear" class="btn ghost"><i data-icon="backspace"></i>Clear</button>
             </div>
-            <p class="small muted">Close both eyes for ½ s = dot · 1½ s = dash · 3 s = delete. Pause to finish a letter. <b>··−−</b> = space, <b>·−·−·</b> = send. No camera? Hold <kbd>Space</kbd>.</p>
           </div>
         </div>
+        <div class="legend">
+          <div><b>·</b><span>Close eyes ½ s</span></div>
+          <div><b>−</b><span>Close eyes 1½ s</span></div>
+          <div><b><i data-icon="backspace"></i></b><span>Close eyes 3 s</span></div>
+          <div><b>··−−</b><span>Space</span></div>
+          <div><b>·−·−·</b><span>Send</span></div>
+          <div><b><kbd>Space</kbd></b><span>No camera? Hold it</span></div>
+        </div>
         <details class="shortcuts" open>
-          <summary>Quick words: blink the word, it sends the full question</summary>
+          <summary>Quick words: blink a word to send the whole question</summary>
           <div id="shortcutGrid" class="shortcut-grid"></div>
         </details>
       </div>
@@ -86,6 +132,7 @@
   </main>
 
   <script src="/static/common.js"></script>
+  <script src="/static/garden.js"></script>
   <script src="/static/blink.bundle.js"></script>
   <script src="/static/guest.js"></script>
 </body>

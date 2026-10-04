@@ -14,8 +14,8 @@
   // ---------- Setup ----------
   for (const [slug, label] of Object.entries(meta.tour_types)) $("tourType").append(new Option(label, slug));
   NG.fillLanguageSelect($("guideLang"));
-  NG.fillLanguageSelect($("guestLangStart"), { includeAuto: true });
-  NG.fillLanguageSelect($("guestLang"), { includeAuto: true, autoLabel: "Auto (from guest screens)" });
+  NG.fillLanguageSelect($("guestLangStart"), { includeAuto: true, autoLabel: "Detect automatically" });
+  NG.fillLanguageSelect($("guestLang"), { includeAuto: true, autoLabel: "Automatic (from guest screens)" });
 
   const profile = await (await fetch("/api/profile")).json();
   $("guideLang").value = profile.guide_language || "en";
@@ -43,6 +43,7 @@
   }
 
   $("stopBtn").onclick = () => {
+    if (!confirm("End the tour now? You'll see a short summary.")) return;
     stopMic();
     ws.send({ type: "stop" });
   };
@@ -54,11 +55,14 @@
         if (!muted) ws.sendBinary(pcm);
       });
       $("muteBtn").classList.remove("hidden");
-      $("micBtn").textContent = "■ Stop listening";
-      $("micBtn").classList.remove("accent");
+      $("micLabel").innerHTML = `<span class="long">Listening. Tap to stop</span><span class="short">Stop</span>`;
       $("micBtn").classList.add("on");
+      $("micBtn").setAttribute("aria-pressed", "true");
+      $("micBtn").querySelector(".mic-ico").innerHTML = NG.icon("stop");
       const tick = () => {
-        $("meterFill").style.width = `${Math.round(mic.level() * 100)}%`;
+        const level = mic.level();
+        $("meterFill").style.width = `${Math.round(level * 100)}%`;
+        $("micBtn").style.setProperty("--level", muted ? 0 : level.toFixed(2));
         meterRaf = requestAnimationFrame(tick);
       };
       tick();
@@ -73,9 +77,10 @@
     const b = $("muteBtn");
     b.classList.toggle("muted", muted);
     b.setAttribute("aria-pressed", String(muted));
-    b.textContent = muted ? "🔇 Muted" : "🔇 Mute";
+    b.innerHTML = `${NG.icon(muted ? "mute" : "micOff")}<span>${muted ? "Muted" : "Mute"}</span>`;
+    b.title = muted ? "Unmute (M)" : "Mute (M): guests won't hear or see what you say";
     $("mutedBanner").classList.toggle("hidden", !muted);
-    document.querySelector(".meter").classList.toggle("muted", muted);
+    $("micBtn").classList.toggle("is-muted", muted);
     if (muted) $("listening").classList.add("hidden");
   }
 
@@ -89,11 +94,12 @@
     mic = null;
     cancelAnimationFrame(meterRaf);
     $("meterFill").style.width = "0";
-    $("micBtn").textContent = "🎙 Start listening";
-    $("micBtn").classList.add("accent");
+    $("micLabel").innerHTML = `<span class="long">Tap to start listening</span><span class="short">Listen</span>`;
     $("micBtn").classList.remove("on");
+    $("micBtn").setAttribute("aria-pressed", "false");
+    $("micBtn").style.setProperty("--level", 0);
+    $("micBtn").querySelector(".mic-ico").innerHTML = NG.icon("mic");
   }
-
 
   $("guestLang").onchange = () => ws.send({ type: "pin_language", lang: $("guestLang").value || null });
 
@@ -143,7 +149,10 @@
   document.addEventListener("keydown", (e) => {
     if (!state.running || e.ctrlKey || e.metaKey || e.altKey) return;
     const tag = e.target?.tagName;
-    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+    // Never while typing. Enter also stays with whatever has focus (a link,
+    // a menu, a button), so it only speaks when nothing interactive is focused.
+    if (e.target?.closest?.("input, textarea, select, dialog, [contenteditable]")) return;
+    if (e.key === "Enter" && e.target?.closest?.("a, button, summary")) return;
     if (["1", "2", "3"].includes(e.key) && current) {
       const i = Number(e.key) - 1;
       const o = options()[i];
@@ -192,7 +201,7 @@
         break;
       case "listening":
         $("listening").classList.toggle("hidden", !msg.active);
-        if (msg.active) $("listening").textContent = msg.role === "guest" ? "● guest screen mic" : "● hearing speech";
+        if (msg.active) $("listening").textContent = msg.role === "guest" ? "Guest screen mic" : "Hearing speech";
         break;
       case "thinking":
         $("thinking").classList.toggle("hidden", !msg.active);
@@ -211,12 +220,13 @@
     const wasRunning = state.running;
     state = s;
     $("setup").classList.toggle("hidden", s.running);
+    document.body.classList.toggle("is-live", !!s.running);
     $("live").classList.toggle("hidden", !s.running);
     if (!s.running && wasRunning) stopMic();
     if (s.running) {
       $("guestLang").value = s.guest_lang_pinned ? s.guest_lang || "" : "";
       const auto = $("guestLang").options[0];
-      auto.textContent = s.guest_lang && !s.guest_lang_pinned ? `Auto (${NG.langName(s.guest_lang)})` : "Auto (from guest screens)";
+      auto.textContent = s.guest_lang && !s.guest_lang_pinned ? `Automatic (${NG.langName(s.guest_lang)})` : "Automatic (from guest screens)";
       renderStops(lastEngagement);
     }
   }
@@ -228,7 +238,8 @@
     (state.stops || []).forEach((stop, i) => {
       const b = document.createElement("button");
       b.className = "stop-btn" + (stop.id === state.current_stop ? " current" : "");
-      b.innerHTML = `${i + 1}. ${esc(stop.name)}${counts[stop.id] ? ` <span class="badge" title="questions">${counts[stop.id]}</span>` : ""}`;
+      b.innerHTML = `<span class="stop-num">${i + 1}</span><span>${esc(stop.name)}</span>${counts[stop.id] ? `<span class="badge" title="questions">${counts[stop.id]}</span>` : ""}`;
+      if (stop.id === state.current_stop) b.setAttribute("aria-current", "step");
       b.onclick = () => ws.send({ type: "set_stop", stop: stop.id });
       rail.append(b);
     });
@@ -247,7 +258,7 @@
       box.append(el);
     }
     el.className = `turn ${p.speaker} partial` + (p.final ? " final-text" : "");
-    const who = p.speaker === "guest" ? "Visitor" : "You";
+    const who = p.speaker === "guest" ? "Guest" : "You";
     const lang = p.lang && p.lang !== state.guide_lang ? `<span class="chip sky">${esc(NG.langName(p.lang))}</span>` : "";
     el.innerHTML = `<div class="meta"><span>${who}</span>${lang}<span>${p.final ? "heard" : "speaking…"}</span></div><div class="main" dir="auto">${esc(p.text)}</div>`;
     if (stick) box.scrollTop = box.scrollHeight;
@@ -257,11 +268,13 @@
     const el = document.createElement("div");
     const guest = e.speaker === "guest";
     el.className = `turn ${e.speaker}` + (e.source === "blink" ? " blink" : "");
-    const who = guest ? (e.source === "blink" ? "👁 Visitor (blink)" : e.source === "tap" ? "👆 Visitor (tapped)" : "Visitor") : e.source === "copilot" ? "You · co-pilot line" : "You";
+    const who = guest
+      ? e.source === "blink" ? `${NG.icon("eye")} Guest · blinked` : e.source === "tap" ? `${NG.icon("hand")} Guest · tapped` : e.source === "typed" ? `${NG.icon("keyboard")} Guest · typed` : "Guest"
+      : e.source === "copilot" ? `${NG.icon("sparkles")} You · suggested reply` : "You";
     const lang = e.lang && e.lang !== state.guide_lang ? `<span class="chip sky">${esc(NG.langName(e.lang))}</span>` : "";
-    const q = e.tags?.question ? `<span class="q" title="question">?</span>` : "";
-    const topic = e.tags?.topic ? `<span class="chip">${esc(e.tags.topic.replace("_", " "))}</span>` : "";
-    const untranslated = e.translated === false ? `<span class="untranslated" title="Translation model not loaded">untranslated</span>` : "";
+    const q = e.tags?.question ? `<span class="q" title="A question">?</span>` : "";
+    const topic = "";
+    const untranslated = e.translated === false ? `<span class="untranslated" title="The translator is still loading">not translated yet</span>` : "";
     let main, orig = "";
     if (guest) {
       main = e.text_guide;
@@ -269,11 +282,11 @@
     } else {
       main = e.text;
       const t = Object.entries(e.translations || {});
-      if (t.length) orig = t.map(([code, text]) => `<div class="orig" dir="auto">→ ${esc(code.toUpperCase())}: ${esc(text)}</div>`).join("");
+      if (t.length) orig = t.map(([code, text]) => `<div class="orig" dir="auto"><span class="orig-lang">${NG.icon("languages")}${esc(NG.langName(code))}</span>${esc(text)}</div>`).join("");
     }
-    if (e.deferred) orig += `<div class="orig untranslated">Marked as unanswered: add it to your briefing</div>`;
-    const lat = e.latency_ms != null ? `<span class="lat" title="end of speech → translated text">⚡${(e.latency_ms / 1000).toFixed(1)}s</span>` : "";
-    el.innerHTML = `<div class="meta">${q}<span>${who}</span>${lang}${topic}${untranslated}${lat}</div><div class="main" dir="auto">${esc(main)}</div>${orig}`;
+    if (e.deferred) orig += `<div class="orig untranslated">No answer ready. Add one in My farm.</div>`;
+    const lat = "";
+    el.innerHTML = `<div class="meta">${q}<span class="row" style="gap:4px">${who}</span>${lang}${topic}${untranslated}${lat}</div><div class="main" dir="auto">${esc(main)}</div>${orig}`;
     const box = $("transcript");
     const stick = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
     const live = e.utt && partials.get(e.utt);
@@ -295,7 +308,7 @@
     current = s;
     const text = $("sugText");
     if (!s) {
-      text.textContent = "A suggestion appears after every line, yours or a visitor's.";
+      text.textContent = "After each thing you or a guest says, a suggestion for what to say next appears here.";
       $("sugSituation").classList.add("hidden");
       $("sugAfter").textContent = "";
       text.className = "sug-text muted";
@@ -314,19 +327,19 @@
     text.className = "sug-text";
     void text.offsetWidth;
     text.classList.add("fresh");
-    $("sugWhy").textContent = s.why || "";
+    $("sugWhy").textContent = (s.why || "").replace(/\bFAQ\b/g, "farm info");
     $("sugSituation").textContent = s.situation || "";
     $("sugSituation").classList.toggle("hidden", !s.situation);
-    $("sugAfter").textContent = s.after === "guide" ? "your next move" : "reply to the visitor";
-    $("sugSource").textContent = s.source === "llm" ? "on-device model" : "farm FAQ";
+    $("sugAfter").textContent = s.after === "guide" ? "Your next move" : "Reply to the guest";
+    $("sugSource").textContent = s.source === "llm" ? "On-device model" : "From your farm FAQ";
     if (s.guest_lang && s.say_guest && s.say_guest !== s.say) {
       $("sugGuest").innerHTML = `<span class="chip sky">${esc(NG.langName(s.guest_lang))}</span> <span dir="auto">${esc(s.say_guest)}</span>`;
       $("sugGuest").classList.remove("hidden");
     } else {
       $("sugGuest").classList.add("hidden");
     }
-    const steps = { buy: "→ sale", book: "→ booking", return: "→ return visit", referral: "→ referral", review: "→ review" };
-    $("sugStep").textContent = steps[s.next_step] || "";
+    const steps = { buy: "Could lead to a sale", book: "Could lead to a booking", return: "Could bring them back", referral: "Could bring their friends", review: "Could earn a review" };
+    $("sugStep").innerHTML = steps[s.next_step] ? `${NG.icon("sparkles")}${steps[s.next_step]}` : "";
     $("sugStep").classList.toggle("hidden", !steps[s.next_step]);
     $("sayBtn").disabled = $("copyBtn").disabled = false;
     renderHistory();
@@ -344,7 +357,7 @@
     opts.forEach((o, i) => {
       const b = document.createElement("button");
       b.className = i === selected ? "on" : "";
-      b.innerHTML = `<kbd>${i + 1}</kbd> ${esc(o.label)}`;
+      b.textContent = o.label;
       b.title = o.say;
       b.onclick = () => selectOption(i);
       box.append(b);
@@ -381,10 +394,11 @@
       currentId: e.current_stop,
       onClick: (row) => ws.send({ type: "set_stop", stop: row.id }),
     });
-    $("hotTopic").textContent = `Hot topic: ${e.hot_topic_label || "–"}`;
-    $("mood").textContent = `Mood: ${e.overall_mood}`;
-    $("blinkCount").textContent = `👁 ${e.blink_turns} blink`;
-    $("used").textContent = `${e.suggestions_used || 0}/${e.suggestion_count || 0} suggestions used`;
+    $("hotTopic").textContent = e.hot_topic_label || "–";
+    $("mood").textContent = e.overall_mood || "neutral";
+    $("blinkCount").textContent = `${e.blink_turns || 0}`;
+    $("blinkTile").classList.toggle("hidden", !e.blink_turns);
+    $("used").textContent = `${e.suggestions_used || 0}/${e.suggestion_count || 0}`;
     $("intents").innerHTML = Object.entries(e.intents || {})
       .map(([k, v]) => `<span class="chip">${esc(k.replace("_", " "))} ×${v}</span>`)
       .join("");
@@ -400,37 +414,48 @@
     const list = (items) => (items?.length ? `<ul>${items.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>` : `<p class="muted small">None.</p>`);
     $("reportBody").innerHTML = `
       <div class="report-grid">
-        ${stat(r.question_count, "visitor questions")}
-        ${stat(r.hot_stop || "–", "most engaging stop")}
-        ${stat(`${r.suggestions_used}/${r.suggestions}`, "suggestions used")}
+        ${stat(r.question_count, "questions from guests")}
+        ${stat(r.hot_stop || "–", "favourite stop")}
+        ${stat(`${r.suggestions_used}/${r.suggestions}`, "suggested replies used")}
         ${stat((r.guest_languages || []).map(NG.langName).join(", ") || "–", "guest languages")}
-        ${stat(r.blink_turns, "blink messages")}
+        ${stat(r.blink_turns, "blinked messages")}
       </div>
       <h2>Questions by stop</h2><div id="reportBars" class="bars"></div>
-      <h2 style="margin-top:14px">Recommendations</h2>${list(r.recommendations)}
-      ${r.missed_moments?.length ? `<h2>Missed moments</h2>${list(r.missed_moments)}` : ""}
-      ${r.unanswered?.length ? `<h2>Add these answers to your briefing</h2>${list(r.unanswered)}` : ""}`;
+      <h2>Tips for next time</h2>${list(r.recommendations)}
+      ${r.missed_moments?.length ? `<h2>Chances you missed</h2>${list(r.missed_moments)}` : ""}
+      ${r.unanswered?.length ? `<h2>Questions to add to My farm</h2>${list(r.unanswered)}` : ""}`;
     NG.bars($("reportBars"), r.stops || []);
     $("reportDialog").showModal();
   }
 
   // ---------- Engine status ----------
   const pills = {};
+  const PILL_NAMES = { conn: "Connection", stt: "Listening", mt: "Translation", llm: "Suggested replies" };
   function setPill(key, label, level) {
     if (!pills[key]) {
-      pills[key] = document.createElement("span");
+      pills[key] = document.createElement("div");
+      pills[key].className = "status-row";
       $("enginePills").append(pills[key]);
     }
-    pills[key].className = `pill ${level}`;
-    pills[key].innerHTML = `<span class="dot"></span>${esc(label)}`;
+    pills[key].dataset.level = level;
+    pills[key].innerHTML = `<span class="dot ${level}"></span><b>${esc(PILL_NAMES[key] || key)}</b><span class="v">${esc(label)}</span>`;
+    // The rule fallback is a working mode, not a problem: only the core engines colour the summary.
+    const core = ["conn", "stt", "mt"].map((k) => pills[k]?.dataset.level).filter(Boolean);
+    const summary = core.includes("err") ? ["err", "Something's wrong"] : core.includes("warn") || core.length < 3 ? ["warn", "Getting ready…"] : ["ok", "Ready"];
+    $("statusDot").className = `dot ${summary[0]}`;
+    $("statusLabel").textContent = summary[1];
   }
+  document.addEventListener("click", (e) => {
+    if (!$("statusMenu").contains(e.target)) $("statusMenu").open = false;
+    if (!$("optionsMenu").contains(e.target)) $("optionsMenu").open = false;
+  });
 
   async function pollHealth() {
     try {
       const h = await (await fetch("/api/health")).json();
-      setPill("stt", h.stt.ready ? `Whisper ${h.stt.model}` : h.stt.error ? "Speech model error" : "Loading speech…", h.stt.ready ? "ok" : h.stt.error ? "err" : "warn");
-      setPill("mt", h.translation.ready ? "NLLB translation" : h.translation.error ? "Translation offline" : "Loading translation…", h.translation.ready ? "ok" : h.translation.error ? "err" : "warn");
-      setPill("llm", h.llm.ready ? h.llm.name.replace("ollama:", "") : "FAQ rules (no model)", h.llm.ready ? "ok" : "warn");
+      setPill("stt", h.stt.ready ? "Ready" : h.stt.error ? "Not working" : "Getting ready…", h.stt.ready ? "ok" : h.stt.error ? "err" : "warn");
+      setPill("mt", h.translation.ready ? "Ready" : h.translation.error ? "Not working" : "Getting ready…", h.translation.ready ? "ok" : h.translation.error ? "err" : "warn");
+      setPill("llm", h.llm.ready ? "Smart replies" : "From your farm info", h.llm.ready ? "ok" : "info");
       if (!(h.stt.ready && h.translation.ready)) setTimeout(pollHealth, 4000);
       else setTimeout(pollHealth, 30000);
     } catch {

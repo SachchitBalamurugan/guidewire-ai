@@ -2,111 +2,200 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Noor Guide</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f7f5f0" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0e0e0c" media="(prefers-color-scheme: dark)">
+  <title>Guidewire</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/fonts/fonts.css">
   <link rel="stylesheet" href="/static/theme.css">
   <link rel="stylesheet" href="/static/guide.css">
+  <link rel="stylesheet" href="/static/garden.css">
 </head>
-<body>
+<body class="page-guide" data-garden="full">
   <header class="topbar">
-    <div class="brand"><span class="leaf"></span><div>Noor Guide<br><small>Tour co-pilot</small></div></div>
-    <div class="pills" id="enginePills"></div>
-    <nav class="nav">
-      <a href="/" class="active">Guide console</a>
-      <a href="/guest" target="_blank" rel="noopener">Guest screen ↗</a>
-      <a href="/insights">Insights</a>
+    <a class="brand" href="/"><span class="mark"><i data-icon="logo"></i></span><span class="brand-name">Guide<em>wire</em></span></a>
+    <nav class="nav" aria-label="Main">
+      <a href="/" class="active" aria-current="page">Tour</a>
+      <a href="/farm">My farm</a>
+      <a href="/insights">Results</a>
     </nav>
+    <div class="topbar-actions">
+      <details class="status" id="statusMenu">
+        <summary aria-label="System status"><span class="dot" id="statusDot"></span><span class="status-label" id="statusLabel">Starting…</span></summary>
+        <div class="status-pop">
+          <div class="status-title">Everything runs on this device</div>
+          <div id="enginePills"></div>
+        </div>
+      </details>
+      <a class="btn secondary sm" href="/guest" target="_blank" rel="noopener" title="Open the screen your guests see"><i data-icon="tablet"></i><span class="hide-sm">Guest screen</span></a>
+    </div>
   </header>
 
-  <section id="setup" class="setup card">
-    <div>
-      <h1>Start a tour</h1>
-      <p class="muted">Noor Guide listens to the tour, translates between you and your guests, and suggests what to say next. Everything runs on this device.</p>
-    </div>
-    <div class="row setup-fields">
-      <label class="field">Tour type<select id="tourType"></select></label>
-      <label class="field">Your language<select id="guideLang"></select></label>
-      <label class="field">Guests' language<select id="guestLangStart"></select></label>
-    </div>
-    <div class="row">
-      <button class="primary" id="startBtn">Start tour</button>
-      <button id="demoBtn">▶ Play demo tour</button>
-      <span class="muted small">The demo plays a French/German group with a blink-input guest.</span>
-    </div>
-  </section>
+  <!-- ============ Start ============ -->
+  <main id="setup" class="setup">
+    <section class="hero">
+      <span class="eyebrow"><i data-icon="shield"></i>Private. Works offline, on this device.</span>
+      <h1 class="display">Every guest,<br><em>understood.</em></h1>
+      <svg class="sprig" viewBox="0 0 300 44" aria-hidden="true">
+        <path class="stem" d="M10 26 C90 34 170 8 290 18"/>
+        <g transform="translate(34.0 27.5) rotate(-37) scale(0.86)"><path class="lf" style="animation-delay:0.70s" d="M0 0 C6 -5.5 15 -6 22 0 C15 6 6 5.5 0 0Z"/></g><g transform="translate(58.3 27.3) rotate(36) scale(0.96)"><path class="lf alt" style="animation-delay:0.82s" d="M0 0 C6 -5.5 15 -6 22 0 C15 6 6 5.5 0 0Z"/></g><g transform="translate(83.1 25.9) rotate(-42) scale(1.03)"><path class="lf" style="animation-delay:0.94s" d="M0 0 C6 -5.5 15 -6 22 0 C15 6 6 5.5 0 0Z"/></g><g transform="translate(108.6 23.8) rotate(33) scale(1.08)"><path class="lf alt" style="animation-delay:1.06s" d="M0 0 C6 -5.5 15 -6 22 0 C15 6 6 5.5 0 0Z"/></g><g transform="translate(135.0 21.2) rotate(-43) scale(1.10)"><path class="lf" style="animation-delay:1.18s" d="M0 0 C6 -5.5 15 -6 22 0 C15 6 6 5.5 0 0Z"/></g><g transform="translate(162.6 18.8) rotate(33) scale(1.08)"><path class="lf alt" style="animation-delay:1.30s" d="M0 0 C6 -5.5 15 -6 22 0 C15 6 6 5.5 0 0Z"/></g><g transform="translate(191.7 16.8) rotate(-41) scale(1.03)"><path class="lf" style="animation-delay:1.42s" d="M0 0 C6 -5.5 15 -6 22 0 C15 6 6 5.5 0 0Z"/></g><g transform="translate(222.5 15.8) rotate(37) scale(0.96)"><path class="lf alt" style="animation-delay:1.54s" d="M0 0 C6 -5.5 15 -6 22 0 C15 6 6 5.5 0 0Z"/></g><g transform="translate(255.2 16.0) rotate(-36) scale(0.86)"><path class="lf" style="animation-delay:1.66s" d="M0 0 C6 -5.5 15 -6 22 0 C15 6 6 5.5 0 0Z"/></g><g transform="translate(279.3 17.2) rotate(42) scale(0.78)"><path class="lf alt" style="animation-delay:1.78s" d="M0 0 C6 -5.5 15 -6 22 0 C15 6 6 5.5 0 0Z"/></g><ellipse class="olive" style="animation-delay:1.9s" cx="95.7" cy="31.9" rx="3.6" ry="4.6"/><ellipse class="olive" style="animation-delay:2.05s" cx="177.0" cy="24.7" rx="3.6" ry="4.6"/>
+      </svg>
+      <p class="lede">Talk with visitors in any language. Guidewire translates for you and suggests what to say next.</p>
+    </section>
 
-  <section id="live" class="live hidden">
-    <div class="controls card">
-      <div class="stops" id="stopRail" aria-label="Tour stops"></div>
-      <div class="row controls-right">
-        <button id="micBtn" class="accent">🎙 Start listening</button>
-        <button id="muteBtn" class="hidden" title="Mute (M): nothing you say is heard, translated or sent to guests" aria-pressed="false">🔇 Mute</button>
-        <span class="meter" aria-hidden="true"><span id="meterFill"></span></span>
-        <label class="field inline">Guests<select id="guestLang"></select></label>
-        <button class="danger" id="stopBtn">End tour</button>
+    <section class="setup-card card" aria-label="Start a tour">
+      <div class="setup-fields">
+        <label class="field"><span>Which tour?</span><span class="select"><select id="tourType"></select></span></label>
+        <label class="field"><span>Your language</span><span class="select"><select id="guideLang"></select></span></label>
+        <label class="field"><span>Your guests' language</span><span class="select"><select id="guestLangStart"></select></span></label>
       </div>
-    </div>
+      <button class="btn primary lg start-btn" id="startBtn">Start tour <i data-icon="arrowRight"></i></button>
+    </section>
 
-    <div class="grid">
-      <div class="col transcript-col card">
-        <div class="row"><h2>Conversation</h2><span class="spacer"></span><span id="listening" class="chip live hidden">● listening</span></div>
-        <div id="mutedBanner" class="muted-banner hidden" role="status">🔇 Muted: nothing you say is heard, translated or sent to guests. Press <kbd>M</kbd> to unmute.</div>
+    <button class="demo-link" id="demoBtn">
+      <span class="demo-play"><i data-icon="play"></i></span>
+      <span class="demo-copy"><b>First time? Watch a demo tour</b><small>See how it works with a pretend group of guests.</small></span>
+      <i data-icon="arrowRight" class="demo-arrow"></i>
+    </button>
+
+    <section class="how" aria-label="How it works">
+      <h2>How it works</h2>
+      <ol class="steps">
+        <li>
+          <span class="step-n">1</span>
+          <div><h3>Pick your languages</h3><p>Choose your language and tap <b>Start tour</b>. Not sure what your guests speak? Leave it on automatic.</p></div>
+        </li>
+        <li>
+          <span class="step-n">2</span>
+          <div><h3>Show guests their screen</h3><p>Open the <a href="/guest" target="_blank" rel="noopener">guest screen</a> on a tablet or phone and hand it to your visitors.</p></div>
+        </li>
+        <li>
+          <span class="step-n">3</span>
+          <div><h3>Just talk</h3><p>Tap the big orange button. Everyone sees what's said in their own language, and you get a suggested reply.</p></div>
+        </li>
+      </ol>
+    </section>
+  </main>
+
+  <!-- ============ Live tour ============ -->
+  <main id="live" class="live hidden">
+    <nav class="stops-bar" aria-label="Tour stops">
+      <span class="stops-label">You are at</span>
+      <div class="stops" id="stopRail"></div>
+    </nav>
+
+    <div class="live-grid">
+      <section class="card convo" aria-label="Conversation">
+        <header class="panel-head">
+          <h2>Conversation</h2>
+          <span class="spacer"></span>
+          <span id="listening" class="live-chip hidden">Hearing speech</span>
+        </header>
+        <div id="mutedBanner" class="muted-banner hidden" role="status"><i data-icon="micOff"></i><span><b>You're muted.</b> Guests won't hear or see what you say. Tap <b>Muted</b> or press <kbd>M</kbd> to unmute.</span></div>
         <div id="transcript" class="transcript" aria-live="polite"></div>
-        <div id="quickPhrases" class="quick-phrases" aria-label="Quick phrases"></div>
-        <form id="typeForm" class="type-form row">
-          <input type="text" id="typeInput" placeholder="Type to your guests (translated and spoken)…" autocomplete="off">
-          <button type="submit">Send</button>
-        </form>
-      </div>
+        <div class="composer">
+          <div class="composer-label">Tap a phrase to say it to your guests</div>
+          <div id="quickPhrases" class="quick-phrases" aria-label="Quick phrases"></div>
+          <form id="typeForm" class="type-form">
+            <input type="text" id="typeInput" placeholder="Or type a message for your guests…" autocomplete="off" aria-label="Message to guests">
+            <button type="submit" class="btn primary icon-only" aria-label="Send"><i data-icon="send"></i></button>
+          </form>
+        </div>
+      </section>
 
-      <div class="col">
-        <div class="card suggestion-card" id="suggestionCard">
-          <div class="row"><h2>Say next</h2><span class="spacer"></span><span id="thinking" class="chip gold hidden">thinking…</span><span id="sugSource" class="chip"></span></div>
-          <div class="row situation-row"><span id="sugSituation" class="chip gold hidden"></span><span id="sugAfter" class="small muted"></span></div>
-          <p id="sugText" class="sug-text muted">A suggestion appears after every line, yours or a visitor's.</p>
-          <div id="sugOptions" class="options" role="tablist" aria-label="Suggestion options"></div>
-          <p id="sugWhy" class="small muted"></p>
+      <div class="side">
+        <section class="card suggest" id="suggestionCard" aria-label="Suggested reply">
+          <header class="panel-head">
+            <h2><i data-icon="sparkles" class="accent-ico"></i>Suggested reply</h2>
+            <span id="thinking" class="thinking hidden" aria-label="Thinking"><i></i><i></i><i></i></span>
+            <span class="spacer"></span>
+            <span id="sugSource" class="hidden"></span>
+          </header>
+          <div class="sug-context"><span id="sugAfter" class="sug-after"></span><span id="sugSituation" class="chip gold hidden"></span></div>
+          <p id="sugText" class="sug-text muted">After each thing you or a guest says, a suggestion for what to say next appears here.</p>
+          <div id="sugOptions" class="options" role="tablist" aria-label="Other replies"></div>
+          <p id="sugWhy" class="sug-why"></p>
           <div id="sugGuest" class="sug-guest hidden"></div>
-          <div class="row">
-            <button class="primary" id="sayBtn" disabled>🔊 Say it for me</button>
-            <button id="copyBtn" disabled>Copy</button>
+          <div class="sug-actions">
+            <button class="btn primary" id="sayBtn" disabled><i data-icon="volume"></i>Say this to guests</button>
+            <button class="hidden" id="copyBtn" disabled>Copy</button>
+            <span class="spacer"></span>
             <span id="sugStep" class="chip terra hidden"></span>
           </div>
-          <p class="small muted keys">Keys: <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> say an option · <kbd>Enter</kbd> say selected · <kbd>M</kbd> mute · <kbd>[</kbd><kbd>]</kbd> stop</p>
           <details class="history">
-            <summary class="small muted">Earlier suggestions</summary>
+            <summary>Past suggestions</summary>
             <ol id="sugHistory"></ol>
           </details>
-        </div>
+        </section>
 
-        <div class="card engagement">
-          <div class="row"><h2>Where guests are engaged</h2><span class="spacer"></span><span class="chip" id="qCount">0 questions</span></div>
+        <section class="card engage" aria-label="What guests are asking about">
+          <header class="panel-head">
+            <h2>What guests ask about</h2>
+            <span class="spacer"></span>
+            <span class="chip" id="qCount">0 questions</span>
+          </header>
+          <p class="engage-hint">Questions at each stop. Longer bars mean more interest.</p>
           <div id="stopBars" class="bars"></div>
-          <div class="row stats">
-            <span class="chip terra" id="hotTopic">Hot topic: –</span>
-            <span class="chip" id="mood">Mood: neutral</span>
-            <span class="chip sky" id="blinkCount">👁 0 blink</span>
-            <span class="chip olive" id="used">0/0 suggestions used</span>
+          <div class="tiles">
+            <div class="tile"><span class="tile-label"><i data-icon="flame"></i>Most asked about</span><span class="tile-value" id="hotTopic">–</span></div>
+            <div class="tile"><span class="tile-label"><i data-icon="smile"></i>Guest mood</span><span class="tile-value" id="mood">neutral</span></div>
+            <div class="tile hidden" id="blinkTile"><span class="tile-label"><i data-icon="eye"></i>Blinked messages</span><span class="tile-value" id="blinkCount">0</span></div>
           </div>
-          <div id="intents" class="row"></div>
-          <div id="deferredWrap" class="hidden">
-            <h2 class="sub">No answer ready</h2>
-            <ul id="deferred" class="small"></ul>
+          <span id="used" class="hidden"></span>
+          <div id="intents" class="hidden"></div>
+          <div id="deferredWrap" class="deferred hidden">
+            <h3>Questions you had no answer for</h3>
+            <ul id="deferred"></ul>
+            <a href="/farm" class="deferred-link">Add the answers in My farm <i data-icon="arrowRight"></i></a>
           </div>
-        </div>
+        </section>
       </div>
     </div>
-  </section>
+
+    <div class="dock-wrap">
+      <div class="dock" role="toolbar" aria-label="Tour controls">
+        <button id="micBtn" class="mic-btn" aria-pressed="false">
+          <span class="mic-ico"><i data-icon="mic"></i></span>
+          <span class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+          <span class="mic-label" id="micLabel"><span class="long">Tap to start listening</span><span class="short">Listen</span></span>
+        </button>
+        <span class="sr-only"><span id="meterFill"></span></span>
+        <button id="muteBtn" class="btn secondary mute-btn hidden" aria-pressed="false" title="Mute (M): guests won't hear or see what you say"><i data-icon="micOff"></i><span>Mute</span></button>
+        <details class="options-menu" id="optionsMenu">
+          <summary class="btn secondary"><i data-icon="sliders"></i><span class="hide-xs">Options</span></summary>
+          <div class="options-pop">
+            <label class="opt-group">
+              <span class="opt-title">Your guests' language</span>
+              <span class="select"><select id="guestLang"></select></span>
+              <small class="opt-hint">Leave on automatic. Each guest screen picks its own language.</small>
+            </label>
+          </div>
+        </details>
+        <button class="btn ghost danger end-btn" id="stopBtn">End tour</button>
+      </div>
+    </div>
+  </main>
 
   <dialog id="reportDialog" class="report">
-    <div class="row"><h1>Tour report</h1><span class="spacer"></span><button id="closeReport" class="ghost">✕</button></div>
-    <div id="reportBody"></div>
-    <div class="row"><a href="/insights" class="btn">Open insights</a><button class="primary" id="newTour">New tour</button></div>
+    <div class="report-inner">
+      <header class="report-head">
+        <div>
+          <span class="eyebrow-sm">Tour finished</span>
+          <h1 class="display">Here's how it went.</h1>
+        </div>
+        <button id="closeReport" class="btn ghost icon-only" aria-label="Close"><i data-icon="x"></i></button>
+      </header>
+      <div id="reportBody"></div>
+      <footer class="report-foot">
+        <a href="/insights" class="btn secondary">See all results</a>
+        <button class="btn primary" id="newTour">Start a new tour</button>
+      </footer>
+    </div>
   </dialog>
 
   <script src="/static/common.js"></script>
   <script src="/static/guide.js"></script>
+  <script src="/static/garden.js"></script>
 </body>
 </html>

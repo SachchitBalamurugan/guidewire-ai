@@ -5013,6 +5013,8 @@
       __publicField(this, "onKey", (e2) => {
         const tag = e2.target?.tagName;
         if (e2.code !== "Space" || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+        const onScreen = this.video.getClientRects().length > 0;
+        if (!onScreen && !(e2.type === "keyup" && this.keyDown)) return;
         e2.preventDefault();
         if (e2.repeat || this.calibrationListener) return;
         const down = e2.type === "keydown";

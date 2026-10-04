@@ -214,9 +214,12 @@ class TourHub:
 
         return [c.lang for c in self.clients.values() if c.role == "guest" and c.lang]
 
+    def guide_muted(self) -> bool:
+        return any(c.muted for c in self.clients.values() if c.role == "guide")
+
     def state(self) -> dict[str, Any]:
         if self.session is not None and self.session.running:
-            return self.session.state()
+            return {**self.session.state(), "guide_muted": self.guide_muted()}
         profile = storage.get_profile()
         return {
             "running": False,
@@ -225,12 +228,16 @@ class TourHub:
             "guest_lang": None,
             "stops": [{"id": s.get("id"), "name": s.get("name")} for s in profile.get("stops", [])],
             "tour_types": TOUR_TYPES,
+            "guide_muted": False,
         }
 
     async def start(self, message: dict[str, Any]) -> "TourSession":
         if self.session is not None and self.session.running:
             return self.session
         profile = storage.get_profile()
+        # Mute belongs to one tour; never carry it into the next.
+        for c in self.clients.values():
+            c.muted = False
         session = TourSession(self, profile)
         self.session = session
         await session.start(
@@ -285,7 +292,7 @@ class TourSession:
         self.started_at = datetime.now(UTC).isoformat()
         self.tasks.add(asyncio.create_task(self._worker(), name="tour-worker"))
         self.logger.write("tour_start", tour_id=self.tour_id, tour_type=self.tour_type)
-        await self.hub.broadcast("tour_state", **self.state())
+        await self.hub.broadcast("tour_state", **self.hub.state())
         llm = "on-device model" if self.engines.llm_available else "built-in FAQ rules"
         await self._status("ok", f"Tour started. Suggestions from the {llm}.")
 
@@ -337,7 +344,7 @@ class TourSession:
             self.logger.write("save_failed", error=str(exc))
         self.logger.write("tour_stop", tour_id=self.tour_id)
         await self.hub.broadcast("tour_ended", tour_id=self.tour_id, report=tour["report"])
-        await self.hub.broadcast("tour_state", **self.state())
+        await self.hub.broadcast("tour_state", **self.hub.state())
         return tour
 
     def to_record(self) -> dict[str, Any]:
@@ -447,7 +454,7 @@ class TourSession:
             await self.set_muted(client, bool(message.get("muted")))
         elif kind == "set_stop":
             self.engagement.set_stop(str(message.get("stop") or ""))
-            await self.hub.broadcast("tour_state", **self.state())
+            await self.hub.broadcast("tour_state", **self.hub.state())
             await self._send_engagement()
         elif kind == "pin_language":
             lang = languages.normalize(message.get("lang"))
@@ -455,7 +462,7 @@ class TourSession:
             if lang:
                 self.guest_lang = lang
                 self._note_guest_language(lang)
-            await self.hub.broadcast("tour_state", **self.state())
+            await self.hub.broadcast("tour_state", **self.hub.state())
         elif kind == "guest_language":
             # The hub already stored the screen's choice on the connection;
             # translation targets read it from there. Seed the tour's guest
@@ -465,7 +472,7 @@ class TourSession:
                 self._note_guest_language(lang)
                 if self.guest_lang is None:
                     self.guest_lang = lang
-                await self.hub.broadcast("tour_state", **self.state())
+                await self.hub.broadcast("tour_state", **self.hub.state())
         elif kind == "guest_text":
             text = str(message.get("text") or "").strip()[:500]
             source = message.get("source") if message.get("source") in {"blink", "tap"} else "typed"
@@ -586,7 +593,7 @@ class TourSession:
         if who == "guest" and lang != self.guide_lang and source != "blink" and not self.guest_lang_pinned:
             if lang != self.guest_lang:
                 self.guest_lang = lang
-                await self.hub.broadcast("tour_state", **self.state())
+                await self.hub.broadcast("tour_state", **self.hub.state())
             self._note_guest_language(lang)
 
         text_en, ok_en = await self._translate(text, lang, "en")
@@ -875,7 +882,7 @@ class TourSession:
                 return
             if step.get("stop"):
                 self.engagement.set_stop(step["stop"])
-                await self.hub.broadcast("tour_state", **self.state())
+                await self.hub.broadcast("tour_state", **self.hub.state())
                 await self._send_engagement()
             if step.get("text"):
                 await self._enqueue(

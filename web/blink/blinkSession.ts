@@ -86,6 +86,10 @@ export class BlinkSession {
   private onKey = (e: KeyboardEvent): void => {
     const tag = (e.target as HTMLElement)?.tagName;
     if (e.code !== "Space" || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+    // Only while the blink view is on screen; elsewhere Space keeps pressing buttons.
+    // A key already held still gets its release, so a letter never sticks closed.
+    const onScreen = this.video.getClientRects().length > 0;
+    if (!onScreen && !(e.type === "keyup" && this.keyDown)) return;
     e.preventDefault();
     if (e.repeat || this.calibrationListener) return;
     const down = e.type === "keydown";
