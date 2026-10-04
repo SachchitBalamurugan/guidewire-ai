@@ -2,6 +2,25 @@
 
 **Hack-Nation × World Bank Youth Summit 2026 · Small AI for Development · Track 04: Tourism**
 
+## ▶ Try it yourself: download once, then it runs with no internet
+
+Guidewire is built for places where the internet is weak or missing. **You download it once. After that, it runs entirely on your own computer, with no internet connection at all.** Nothing is sent to the cloud.
+
+1. **Download:** [**Download Guidewire (ZIP)**](https://github.com/SachchitBalamurugan/guidewire-ai/archive/refs/heads/main.zip), then unzip it.
+2. **Start it:**
+   - **Windows:** double-click **`start.bat`** in the unzipped folder.
+   - **Mac or Linux:** open Terminal in the folder and run `bash start.sh`.
+3. **Wait for the one-time setup.** The first start sets everything up by itself: Python, the app, and the AI models (about 1.5 GB). **You don't need to install anything first, not even Python.** This is the only time it needs the internet.
+4. **Your browser opens two tabs:** **Noor's screen** (the guide) and the **guest's screen**.
+5. **From now on, no internet is needed.** Turn off Wi-Fi and run `start.bat` / `start.sh` again: everything still works, offline.
+
+**What to try:**
+- **Quickest:** on the guest's screen pick **French** and tap **Start**. On Noor's screen tap **Watch a demo tour** (leave *Your language* on English). A scripted group of French and German visitors plays through the real pipeline, and you'll see translations and suggested replies appear live.
+- **Your own tour:** on Noor's screen set *Your language* to **Arabic** and tap **Start tour**. On the guest's screen, ask a question (**Talk**, **Write** or **Blink**), watch it arrive in Arabic with a suggested reply, and tap **Say this to guests**.
+- Then tap **End tour** for the report, and open **Results** for tips and **Ask about your business**.
+
+**You need:** a Windows, Mac or Linux computer with about 4 GB of free space, a normal browser (Chrome, Edge or Safari), and a microphone if you want to talk to it. During setup it asks whether to add the optional 3B suggestion model (about 2 GB more); without it, suggestions come from the built-in rules and everything else still uses the AI models.
+
 > **Problem statement.** Because of Guidewire, Noor will answer every visitor in their own language and learn what they value, *during* each tour, when otherwise she would depend on a go-between to translate and never find out what worked; we know because small operators like her run on instinct, without the languages or the analysis to turn a good visit into a sale, a review or a return booking (Annex C, Jordan).
 
 Noor runs a small olive and herb farm in the Jordan Valley. She speaks Arabic; her visitors speak French, German, Korean, Spanish. The things that would grow her business (an interpreter on every tour, someone to analyse what guests liked, a coach for when to mention the harvest Saturday) cost money she doesn't have. **Guidewire puts all three on one device, with three small AI models that run on an ordinary processor and need no internet once installed.**

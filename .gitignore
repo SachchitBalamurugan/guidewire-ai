@@ -7,3 +7,6 @@ data/store/
 logs/
 .DS_Store
 *.log
+.tools/
+.models-ready
+.guidewire-setup
