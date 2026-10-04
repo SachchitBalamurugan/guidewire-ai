@@ -195,3 +195,7 @@ share.sh, share.ps1 HTTPS tunnel for the phone demo
 Built by combining two of our earlier projects:
 - **orbit.ai**, a live AI sales teleprompter: the real-time session loop, suggestion filter, coaching-prompt discipline, engagement analytics and post-call report, retargeted from closing a sale to delighting a visitor.
 - **Bolne Sathi**, an offline communication aid: the blink detector (MediaPipe) and the Morse decoder.
+
+## License
+
+Guidewire's code is released under the [MIT License](LICENSE). Bundled third-party parts keep their own licenses: MediaPipe (`static/mediapipe/`, Apache 2.0), and the AI models downloaded at setup (Whisper: MIT; NLLB-200: CC-BY-NC 4.0; Qwen2.5 3B: Qwen Research License).
