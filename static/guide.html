@@ -110,12 +110,13 @@
             <h2><i data-icon="sparkles" class="accent-ico"></i>Suggested reply</h2>
             <span id="thinking" class="thinking hidden" aria-label="Thinking"><i></i><i></i><i></i></span>
             <span class="spacer"></span>
-            <span id="sugSource" class="hidden"></span>
+            <span id="sugSource" class="source-chip"></span>
           </header>
           <div class="sug-context"><span id="sugAfter" class="sug-after"></span><span id="sugSituation" class="chip gold hidden"></span></div>
           <p id="sugText" class="sug-text muted">After each thing you or a guest says, a suggestion for what to say next appears here.</p>
           <div id="sugOptions" class="options" role="tablist" aria-label="Other replies"></div>
           <p id="sugWhy" class="sug-why"></p>
+          <div id="sugUnsure" class="sug-unsure hidden" role="note"><i data-icon="help"></i><span><b>Not sure.</b> This isn't in your farm info, so the reply only promises to check. Don't guess an answer. Ask someone who knows, then add it in <a href="/farm">My farm</a>.</span></div>
           <div id="sugGuest" class="sug-guest hidden"></div>
           <div class="sug-actions">
             <button class="btn primary" id="sayBtn" disabled><i data-icon="volume"></i>Say this to guests</button>
@@ -123,6 +124,7 @@
             <span class="spacer"></span>
             <span id="sugStep" class="chip terra hidden"></span>
           </div>
+          <p class="sug-decide"><i data-icon="shield"></i>Only a suggestion. You decide what to say, and nothing reaches guests until you tap.</p>
           <details class="history">
             <summary>Past suggestions</summary>
             <ol id="sugHistory"></ol>

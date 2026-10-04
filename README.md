@@ -55,6 +55,17 @@ The first start downloads Whisper and NLLB from Hugging Face (about 1.1 GB, once
 
 > The camera and microphone need a secure origin. `localhost` counts. For a guest tablet on the LAN, serve over HTTPS (`uvicorn ... --ssl-keyfile --ssl-certfile`) or run the guest screen in a second window on the same laptop.
 
+### Phone demo
+
+Every screen is built for phones first (tested at 360 px Android and iPhone sizes, portrait and landscape). To open it on phones with the microphone working, start it through an HTTPS tunnel:
+
+```bash
+./share.sh            # macOS / Linux  (needs: brew install cloudflared)
+powershell -ExecutionPolicy Bypass -File share.ps1    # Windows
+```
+
+It prints two links. Open the first on the guide's phone (the tour console) and `/guest` on each visitor's phone. The tunnel only carries the pages; speech recognition, translation and suggestions still run on the laptop. Without internet, use the laptop plus a tablet on the same Wi-Fi over HTTPS, as above.
+
 ## Using it on a tour
 
 - Tap the **stop** you are at. Questions are credited to that stop, and the badge shows the count.

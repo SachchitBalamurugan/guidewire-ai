@@ -218,3 +218,28 @@ body.tour-live .tour-status::before { background: #34c759; box-shadow: 0 0 0 3px
 .paused-chip { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: 999px; background: var(--rec-soft); color: var(--danger-c); font-size: 12.5px; font-weight: 600; }
 .paused-chip svg { width: 14px; height: 14px; }
 .stage-head { flex-wrap: wrap; }
+
+/* ---------- Phones ---------- */
+.guest-bar { height: auto; min-height: 68px; padding-top: 8px; padding-bottom: 8px; }
+.tour-status { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.welcome-quiet { min-height: 44px; }
+@media (max-width: 760px), (pointer: coarse) {
+  .lang-pill { height: 44px; }
+  .select.bare select { height: 42px; }
+  .sound-btn { height: 44px; min-width: 44px; justify-content: center; }
+}
+@media (max-width: 560px) {
+  .guest-bar { min-height: 60px; }
+  .select.bare select { max-width: 110px; }
+  .sound-btn { width: 44px; padding: 0; }
+}
+/* Phone held sideways: keep the header slim and let the content breathe. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .guest-bar { min-height: 56px; }
+  .guest { padding-top: 16px; }
+  .stage { min-height: 0; }
+  .now-text { font-size: clamp(28px, 5vw, 44px); }
+  .select.bare select { max-width: 180px; }
+  .speak-stage { padding: 12px 8px 4px; }
+  .big-mic { width: 96px; height: 96px; }
+}

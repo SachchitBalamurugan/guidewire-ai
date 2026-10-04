@@ -240,12 +240,15 @@
       .join("");
     const snips = (d.snippets || []).map((s) => `<li><b>${esc(s.source === "tour" ? "Tour" : s.source)}:</b> <span dir="auto">${esc(s.text)}</span></li>`).join("");
     const translated = d.lang && d.lang !== "en" ? `<div class="a-en">In English: ${esc(d.answer_en)}</div>` : "";
+    // No reviews or tours behind the answer: say so instead of sounding sure.
+    const thin = !(d.evidence || []).length && !(d.snippets || []).length;
     card.innerHTML = `
       <div class="q" dir="auto">${esc(question)}</div>
       <div class="a" dir="auto">${esc(d.answer)}</div>
+      ${thin ? `<div class="qa-unsure">${NG.icon("help")}<span><b>Not enough data to be sure.</b> Add more reviews or run more tours, or ask someone who knows.</span></div>` : ""}
       ${translated}
       ${snips ? `<ul class="snips">${snips}</ul>` : ""}
-      <div class="meta">${ev}<span class="spacer"></span><span>${d.source === "llm" ? "Written by the smart assistant" : "From your tours and reviews"}</span><button type="button" class="btn ghost sm speak">${NG.icon("volume")}Read aloud</button></div>`;
+      <div class="meta">${ev}<span class="spacer"></span><span>${d.source === "llm" ? "Summarised by on-device AI: check the sources" : "From your tours and reviews"}</span><button type="button" class="btn ghost sm speak">${NG.icon("volume")}Read aloud</button></div>`;
     card.querySelector(".speak").onclick = () => {
       window.speechSynthesis?.cancel();
       if (!NG.speak(d.answer, d.bcp47)) NG.speak(d.answer_en, "en-US");

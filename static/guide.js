@@ -316,6 +316,8 @@
       $("sugGuest").classList.add("hidden");
       $("sayBtn").disabled = $("copyBtn").disabled = true;
       $("sugSource").textContent = "";
+      $("sugUnsure").classList.add("hidden");
+      $("suggestionCard").classList.remove("unsure");
       $("sugStep").classList.add("hidden");
       $("sugOptions").innerHTML = "";
       renderHistory();
@@ -331,7 +333,13 @@
     $("sugSituation").textContent = s.situation || "";
     $("sugSituation").classList.toggle("hidden", !s.situation);
     $("sugAfter").textContent = s.after === "guide" ? "Your next move" : "Reply to the guest";
-    $("sugSource").textContent = s.source === "llm" ? "On-device model" : "From your farm FAQ";
+    // Say plainly where the line came from, and flag when the farm info has no answer.
+    $("sugSource").textContent = s.source === "llm" ? "Written by on-device AI: check the facts" : "From your farm info";
+    $("sugSource").classList.toggle("ai", s.source === "llm");
+    const unsure = /^Not in your briefing/i.test(s.why || "");
+    $("sugUnsure").classList.toggle("hidden", !unsure);
+    $("suggestionCard").classList.toggle("unsure", unsure);
+    if (unsure) $("sugWhy").textContent = "";
     if (s.guest_lang && s.say_guest && s.say_guest !== s.say) {
       $("sugGuest").innerHTML = `<span class="chip sky">${esc(NG.langName(s.guest_lang))}</span> <span dir="auto">${esc(s.say_guest)}</span>`;
       $("sugGuest").classList.remove("hidden");

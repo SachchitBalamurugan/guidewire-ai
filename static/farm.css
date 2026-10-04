@@ -75,3 +75,7 @@
 .no-answer { display: none; color: var(--gold-c) !important; }
 .f-a:placeholder-shown + .no-answer { display: block; }
 .block .invalid, .block .invalid:focus { border-color: var(--danger-c); background: var(--rec-soft); box-shadow: 0 0 0 4px var(--rec-soft); }
+
+@media (max-width: 760px), (pointer: coarse) {
+  .advanced textarea { font-size: 16px !important; }
+}

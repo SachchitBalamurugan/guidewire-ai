@@ -183,3 +183,10 @@
   .ask-form .btn { padding: 0 16px; }
   .ask-form input { font-size: 15px; }
 }
+
+@media (max-width: 760px), (pointer: coarse) {
+  .ask-examples button { height: 40px; }
+}
+
+.qa-unsure { display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: var(--r-sm); background: var(--gold-s); font-size: 13px; line-height: 1.45; }
+.qa-unsure svg { flex: none; color: var(--gold-c); width: 16px; height: 16px; margin-top: 1px; }

@@ -432,3 +432,27 @@ dialog.report { width: min(760px, calc(100% - 24px)); max-height: calc(100dvh - 
   .mute-btn { width: 46px; padding: 0; }
   .mute-btn span { display: none; }
 }
+
+/* ---------- Phones ---------- */
+.tile-value { white-space: normal; overflow-wrap: anywhere; }
+@media (max-width: 860px), (pointer: coarse) {
+  .quick-phrases button, .options button { height: 40px; }
+  .options button { padding: 0 14px; }
+  .history li button { height: 34px; padding: 0 14px; }
+  .composer { gap: 8px; }
+}
+
+/* ---------- Guardrails: where a line came from, and when it is unsure ---------- */
+.source-chip { font-size: 11.5px; font-weight: 600; color: var(--accent-ink); background: var(--accent-soft); padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+.source-chip:empty { display: none; }
+.source-chip.ai { color: var(--gold-c); background: var(--gold-s); }
+.sug-unsure { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: var(--r-sm); background: var(--gold-s); font-size: 13.5px; line-height: 1.45; color: var(--ink); }
+.sug-unsure svg { flex: none; color: var(--gold-c); width: 18px; height: 18px; margin-top: 1px; }
+.sug-unsure a { color: var(--ink); font-weight: 600; }
+.suggest.unsure::before { background: var(--gold-c); }
+.sug-decide { display: flex; gap: 8px; align-items: center; font-size: 12.5px; color: var(--ink-3); margin-top: -2px; }
+.sug-decide svg { width: 15px; height: 15px; flex: none; color: var(--accent); }
+@media (max-width: 420px) { .source-chip { white-space: normal; text-align: right; } }
+@media (max-width: 860px), (pointer: coarse) {
+  .history summary { min-height: 40px; }
+}

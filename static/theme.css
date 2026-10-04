@@ -404,3 +404,24 @@ dialog::backdrop { background: rgba(10, 10, 8, 0.4); backdrop-filter: blur(6px);
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* ---------- Phones ----------
+   Touch screens get 40px+ tap targets, and every text field is at least 16px:
+   iOS zooms the whole page into anything smaller when it is tapped. */
+.nav a { white-space: nowrap; }
+
+@media (max-width: 760px), (pointer: coarse) {
+  input[type="text"], input:not([type]), textarea, select { font-size: 16px !important; }
+  .btn.sm { height: 40px; }
+  .btn.sm.icon-only { width: 40px; }
+  .nav a { min-height: 40px; display: inline-flex; align-items: center; }
+  .status > summary { height: 40px; }
+  .brand { min-height: 44px; min-width: 44px; }
+}
+
+@media (max-width: 420px) {
+  .topbar { padding: 0 12px; gap: 8px; }
+  .nav a { padding: 6px 11px; font-size: 13px; }
+  /* Engine status lives on the console's start page check; no room for it here. */
+  .status { display: none; }
+}
