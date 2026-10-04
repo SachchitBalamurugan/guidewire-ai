@@ -74,8 +74,20 @@ async def lifespan(app: FastAPI):
         app.state.warmup.cancel()
 
 
-app = FastAPI(title="Noor Guide", lifespan=lifespan)
+app = FastAPI(title="Guidewire", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+
+@app.middleware("http")
+async def revalidate_pages(request: Request, call_next):
+    """Pages and their scripts change together on every deploy, so browsers must
+    check for a newer copy instead of guessing from Last-Modified. Unchanged
+    files still come back as a cheap 304 via their ETag."""
+
+    response = await call_next(request)
+    if request.method == "GET" and not request.url.path.startswith("/api/"):
+        response.headers.setdefault("Cache-Control", "no-cache")
+    return response
 
 
 def _hub(request: Request | WebSocket) -> TourHub:
@@ -97,6 +109,11 @@ async def guest_page() -> FileResponse:
 @app.get("/insights")
 async def insights_page() -> FileResponse:
     return FileResponse(STATIC_DIR / "insights.html")
+
+
+@app.get("/farm")
+async def farm_page() -> FileResponse:
+    return FileResponse(STATIC_DIR / "farm.html")
 
 
 # ---------- API ----------
@@ -298,6 +315,9 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
             raise
     finally:
         hub.remove(websocket)
+        # A guide that leaves while muted must not leave guests seeing "paused".
+        if client.role == "guide" and client.muted and not hub.guide_muted():
+            await hub.broadcast("mic_state", role="guide", muted=False)
 
 
 async def _handle_text(hub: TourHub, client: Any, raw: str) -> None:
@@ -314,6 +334,10 @@ async def _handle_text(hub: TourHub, client: Any, raw: str) -> None:
     elif kind == "stop":
         if client.role == "guide" and hub.session is not None:
             await hub.session.stop()
+    elif kind == "mute" and client.role == "guide" and not (hub.session is not None and hub.session.running):
+        # Between tours there is nothing to transcribe; just keep the flag honest.
+        client.muted = bool(message.get("muted"))
+        await hub.broadcast("mic_state", role="guide", muted=hub.guide_muted())
     elif kind == "guest_language" and client.role == "guest":
         client.lang = languages.normalize(message.get("lang"))
         if hub.session is not None and hub.session.running:

@@ -79,6 +79,15 @@ def get_tour(tour_id: str) -> dict[str, Any] | None:
     return _read(_root() / "tours" / f"{tour_id}.json", None)
 
 
+def _stop_name(tour: dict[str, Any], stop_id: str | None) -> str | None:
+    """Older tours stored only the hot stop's id; look its name up."""
+
+    for stop in (tour.get("engagement") or {}).get("stops", []):
+        if stop.get("id") == stop_id:
+            return stop.get("name")
+    return stop_id
+
+
 def list_tours() -> list[dict[str, Any]]:
     tours = []
     for path in sorted((_root() / "tours").glob("*.json"), reverse=True):
@@ -96,6 +105,7 @@ def list_tours() -> list[dict[str, Any]]:
                 "turn_count": len(tour.get("turns", [])),
                 "question_count": engagement.get("question_count", 0),
                 "hot_stop": engagement.get("hot_stop"),
+                "hot_stop_name": engagement.get("hot_stop_name") or _stop_name(tour, engagement.get("hot_stop")),
                 "demo": bool(tour.get("demo")),
             }
         )
@@ -126,6 +136,8 @@ def add_reviews(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
             rating = float(rating) if rating not in (None, "") else None
         except (TypeError, ValueError):
             rating = None
+        if rating is not None and not 0 <= rating <= 5:
+            rating = None  # not a 1-5 star rating
         reviews.append(
             {
                 "id": f"R{next_id}",

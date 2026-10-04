@@ -156,7 +156,9 @@ def format_briefing(profile: dict[str, Any]) -> str:
     if profile.get("booking"):
         lines.append(f"Booking: {profile['booking']}")
     for item in profile.get("faq", []):
-        lines.append(f"FAQ: {item.get('q')} -> {item.get('a')}")
+        # A question saved without an answer yet is a reminder, not a fact.
+        if str(item.get("a") or "").strip():
+            lines.append(f"FAQ: {item.get('q')} -> {item.get('a')}")
     if profile.get("topics"):
         lines.append("Topic ids: " + ", ".join(t["id"] for t in profile["topics"] if t.get("id")))
     for claim in profile.get("claims_not_to_make", []):
@@ -540,6 +542,8 @@ class Coach:
         words = _content_words(text)
         best, best_score = None, 0.0
         for item in self.profile.get("faq", []):
+            if not str(item.get("a") or "").strip():
+                continue
             keywords = [k.lower() for k in item.get("keywords", [])]
             kw_hits = sum(1 for k in keywords if _has(clean, k))
             q_words = _content_words(item.get("q", ""))

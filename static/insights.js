@@ -17,29 +17,43 @@
       .slice()
       .reverse()
       .map((r) => {
-        const stars = r.rating ? "★".repeat(Math.round(r.rating)) : "";
+        const n = Math.max(0, Math.min(5, Math.round(Number(r.rating) || 0)));
+        const stars = n ? `<span class="stars" title="${esc(r.rating)} stars">${NG.icon("starFill").repeat(n)}</span>` : "";
         const lang = r.lang && r.lang !== "en" ? `<span class="chip sky">${esc(NG.langName(r.lang))}</span>` : "";
         const en = r.text_en && r.text_en !== r.text ? `<div class="en">EN: ${esc(r.text_en)}</div>` : r.lang && r.lang !== "en" && !r.text_en ? `<div class="en">Translation pending (model loading)</div>` : "";
         return `<div class="review" id="rev-${esc(r.id)}"><div class="meta"><b>${esc(r.id)}</b><span>${stars}</span>${lang}<span>${esc(r.source || "")}</span><span>${esc(r.date || "")}</span></div><div dir="auto">${esc(r.text)}</div>${en}</div>`;
       })
-      .join("") || `<p class="muted small">No reviews yet. Paste some, upload a CSV, or load the samples.</p>`;
+      .join("") || `<p class="muted small">No reviews yet. Paste some above, or try the sample reviews.</p>`;
   }
 
   async function postReviews(body) {
-    const res = await fetch("/api/reviews", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    let res;
+    try {
+      res = await fetch("/api/reviews", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    } catch {
+      NG.toast("Couldn't reach Guidewire. Is it still running?");
+      return false;
+    }
     if (!res.ok) {
-      NG.toast((await res.json()).detail || "Could not add reviews");
-      return;
+      let detail = "";
+      try {
+        detail = (await res.json()).detail;
+      } catch {
+        /* not JSON */
+      }
+      NG.toast(detail || "Couldn't add those reviews.");
+      return false;
     }
     reviews = await res.json();
     renderReviews();
-    NG.toast(`${reviews.length} reviews`);
+    NG.toast(`You now have ${reviews.length} reviews`);
+    return true;
   }
 
   $("addReviews").onclick = () => {
     const raw = $("reviewInput").value.trim();
     if (!raw) return;
-    postReviews({ raw }).then(() => ($("reviewInput").value = ""));
+    postReviews({ raw }).then((added) => added && ($("reviewInput").value = ""));
   };
   $("reviewFile").onchange = async (e) => {
     const file = e.target.files[0];
@@ -47,8 +61,9 @@
     e.target.value = "";
   };
   $("sampleReviews").onclick = () => postReviews({ sample: true });
+  $("emptySample").onclick = () => postReviews({ sample: true });
   $("clearReviews").onclick = async () => {
-    if (!confirm("Remove all imported reviews?")) return;
+    if (!confirm("Remove all reviews? This can't be undone.")) return;
     reviews = await (await fetch("/api/reviews", { method: "DELETE" })).json();
     renderReviews();
   };
@@ -56,14 +71,15 @@
   // ---------- Insights ----------
   $("genBtn").onclick = async () => {
     $("genBtn").disabled = true;
-    $("genStatus").textContent = "Reading tours and reviews… (a small model on CPU can take a minute)";
+    $("genStatus").textContent = "Reading your tours and reviews… this can take a minute.";
     try {
       const res = await fetch("/api/insights", { method: "POST" });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.recommendations) throw new Error(data.detail || "no tips came back");
       renderInsights(data);
       await loadReviews();
     } catch (err) {
-      $("genStatus").textContent = `Failed: ${err.message}`;
+      $("genStatus").textContent = `Couldn't make tips (${err.message}). Please try again.`;
     } finally {
       $("genBtn").disabled = false;
     }
@@ -81,7 +97,7 @@
   }
 
   function recItems(items, key = "point") {
-    if (!items?.length) return `<li class="muted small">Not enough data yet.</li>`;
+    if (!items?.length) return `<li class="muted small">Not enough information yet.</li>`;
     return items
       .map((i) => `<li>${esc(i[key] || i.point || i.idea)}${i.why ? `<span class="why">${esc(i.why)}</span>` : ""}${evidence(i.evidence || i.ids)}</li>`)
       .join("");
@@ -89,6 +105,8 @@
 
   function renderInsights(d) {
     if (!d || !d.recommendations) return;
+    $("emptyState").classList.add("hidden");
+    $("insightsBody").classList.remove("hidden");
     const rec = d.recommendations;
     $("keep").innerHTML = recItems(rec.keep_doing);
     $("fix").innerHTML = recItems(rec.fix);
@@ -106,8 +124,8 @@
     const kpi = (v, l) => `<div class="kpi"><b>${esc(v ?? "–")}</b><span class="small muted">${esc(l)}</span></div>`;
     const langs = Object.keys(t.guest_languages || {}).join(", ");
     $("kpis").innerHTML =
-      kpi(t.tour_count, "tours") + kpi(t.question_count, "visitor questions") + kpi(r.review_count, "reviews") + kpi(r.avg_rating, "avg rating") + kpi(langs || "–", "guest languages");
-    const model = d.source === "llm" ? `Written by ${d.model}` : "Rule-based (start Ollama for model-written advice)";
+      kpi(t.tour_count, "tours") + kpi(t.question_count, "guest questions") + kpi(r.review_count, "reviews") + kpi(r.avg_rating, "average stars") + kpi(langs || "–", "guest languages");
+    const model = d.source === "llm" ? "Written by the smart assistant" : "Made from your tours and reviews";
     $("genStatus").textContent = `${model} · ${new Date().toLocaleTimeString()}`;
   }
 
@@ -137,12 +155,12 @@
     const tours = await (await fetch("/api/tours")).json();
     $("tourList").innerHTML = tours.length
       ? ""
-      : `<p class="muted small">No tours yet. Run one from the guide console (try the demo tour).</p>`;
+      : `<p class="muted small">No tours yet. Tours you run will show up here.</p>`;
     for (const t of tours) {
       const b = document.createElement("button");
       b.className = "tour-item";
       const when = t.started_at ? new Date(t.started_at).toLocaleString() : t.id;
-      b.innerHTML = `<span>${esc(when)}${t.demo ? ' <span class="chip">demo</span>' : ""}</span><span class="small muted">${t.question_count} q · ${esc(t.hot_stop || "–")}</span>`;
+      b.innerHTML = `<span>${esc(when)}${t.demo ? ' <span class="chip">demo</span>' : ""}</span><span class="small">${t.question_count} questions · ${esc(t.hot_stop_name || t.hot_stop || "–")}</span>`;
       b.onclick = () => showTour(t.id, b);
       $("tourList").append(b);
     }
@@ -161,24 +179,7 @@
     NG.bars($("tourBars"), r.stops || []);
   }
 
-  // ---------- Briefing ----------
-  async function loadProfile() {
-    const p = await (await fetch("/api/profile")).json();
-    $("profileJson").value = JSON.stringify(p, null, 2);
-  }
-  $("saveProfile").onclick = async () => {
-    let parsed;
-    try {
-      parsed = JSON.parse($("profileJson").value);
-    } catch (err) {
-      $("profileStatus").textContent = `Not valid JSON: ${err.message}`;
-      return;
-    }
-    const res = await fetch("/api/profile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(parsed) });
-    $("profileStatus").textContent = res.ok ? "Saved. New tours use it." : (await res.json()).detail;
-  };
-
-  await Promise.all([loadReviews(), loadTours(), loadProfile()]);
+  await Promise.all([loadReviews(), loadTours()]);
   const last = await (await fetch("/api/insights")).json();
   if (last.recommendations) renderInsights(last);
 })();
@@ -238,13 +239,13 @@
       .map((id) => `<span class="chip ${/^R\d+$/.test(id) ? "olive" : ""}" ${/^R\d+$/.test(id) ? `data-rev="${esc(id)}"` : ""}>${esc(id)}</span>`)
       .join("");
     const snips = (d.snippets || []).map((s) => `<li><b>${esc(s.source === "tour" ? "Tour" : s.source)}:</b> <span dir="auto">${esc(s.text)}</span></li>`).join("");
-    const translated = d.lang && d.lang !== "en" ? `<div class="small muted">EN: ${esc(d.answer_en)}</div>` : "";
+    const translated = d.lang && d.lang !== "en" ? `<div class="a-en">In English: ${esc(d.answer_en)}</div>` : "";
     card.innerHTML = `
       <div class="q" dir="auto">${esc(question)}</div>
       <div class="a" dir="auto">${esc(d.answer)}</div>
       ${translated}
       ${snips ? `<ul class="snips">${snips}</ul>` : ""}
-      <div class="meta">${ev}<span class="spacer"></span><span>${d.source === "llm" ? "on-device model" : "from your data"}</span><button type="button" class="ghost small-btn speak">🔊 Read aloud</button></div>`;
+      <div class="meta">${ev}<span class="spacer"></span><span>${d.source === "llm" ? "Written by the smart assistant" : "From your tours and reviews"}</span><button type="button" class="btn ghost sm speak">${NG.icon("volume")}Read aloud</button></div>`;
     card.querySelector(".speak").onclick = () => {
       window.speechSynthesis?.cancel();
       if (!NG.speak(d.answer, d.bcp47)) NG.speak(d.answer_en, "en-US");
@@ -257,6 +258,7 @@
   let rec = null;
   let chunks = [];
   let meterRaf = 0;
+  let recTimer = 0;
   $("askMic").onclick = async () => {
     if (rec) return stop();
     try {
@@ -264,15 +266,15 @@
       rec = await NG.startMic((pcm) => chunks.push(new Uint8Array(pcm)));
       $("askMic").classList.add("recording");
       $("askMic").setAttribute("aria-pressed", "true");
-      $("askMic").textContent = "■";
+      $("askMic").innerHTML = NG.icon("stop");
       const tick = () => {
         const level = Math.round(rec.level() * 100);
-        $("askStatus").textContent = `Listening… ${"▮".repeat(Math.max(1, Math.round(level / 12)))} click ■ when you're done`;
+        $("askStatus").innerHTML = `<span class="ask-level" style="--level:${level / 100}"></span>Listening… tap the button again when you're done`;
         meterRaf = requestAnimationFrame(tick);
       };
       tick();
       // Hard stop at 30 s.
-      setTimeout(() => rec && stop(), 30000);
+      recTimer = setTimeout(() => rec && stop(), 30000);
     } catch (err) {
       rec = null;
       $("askStatus").textContent = `Microphone unavailable: ${err.message}`;
@@ -280,12 +282,13 @@
   };
 
   async function stop() {
+    clearTimeout(recTimer);
     cancelAnimationFrame(meterRaf);
     rec.stop();
     rec = null;
     $("askMic").classList.remove("recording");
     $("askMic").setAttribute("aria-pressed", "false");
-    $("askMic").textContent = "🎙";
+    $("askMic").innerHTML = NG.icon("mic");
     const total = chunks.reduce((n, c) => n + c.length, 0);
     const body = new Uint8Array(total);
     let at = 0;

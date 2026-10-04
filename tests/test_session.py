@@ -351,3 +351,9 @@ def test_a_suggestion_follows_noors_own_lines_too():
     s = run(scenario()).of("suggestion")[-1]
     assert s["after"] == "guide"
     assert s["situation"] and len(s["options"]) >= 2
+
+
+def test_ratings_outside_one_to_five_are_dropped():
+    reviews = storage.add_reviews([{"text": "Great", "rating": -1}, {"text": "Fine", "rating": 4}, {"text": "Odd", "rating": 80}])
+    by_text = {r["text"]: r["rating"] for r in reviews}
+    assert by_text == {"Great": None, "Fine": 4.0, "Odd": None}

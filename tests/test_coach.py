@@ -152,3 +152,14 @@ def test_blink_answers_stay_complete_with_a_yes_no_option():
     r = coach.rules(t, sit(stop_id="kitchen", stop_name="Courtyard lunch", stop_index=4, blink_guest=True))
     assert "WhatsApp" in r.say
     assert any("blink YES or NO" in o["say"] for o in r.options)
+
+
+def test_question_saved_without_answer_is_never_used():
+    # My farm lets the guide save a question now and answer it later.
+    profile = storage.get_profile()
+    profile["faq"] = [{"q": "How old are the trees?", "a": "", "keywords": ["old", "trees", "age"]}] + profile["faq"]
+    assert "FAQ: How old are the trees? -> \n" not in format_briefing(profile) + "\n"
+    coach = Coach(RulesLLM(), profile)
+    # The empty entry scores at least as high, but the answered one must still win.
+    result = coach.rules(guest_turn("How old are the trees?", "grove"), "grove")
+    assert "300 years" in result.say
