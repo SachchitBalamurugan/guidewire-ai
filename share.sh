@@ -2,11 +2,12 @@
 # Starts Guidewire and a temporary HTTPS tunnel so phones and tablets can open it
 # with microphone and camera access (browsers only allow those over HTTPS).
 # macOS / Linux counterpart of share.ps1.
-# Usage:  ./share.sh [port]      (default 8000)
+# Usage:  ./share.sh [port] [https://your-app.vercel.app]      (default 8000)
 # Anyone with the printed link can open the app while this is running.
 
 set -euo pipefail
 PORT="${1:-8000}"
+WEB="${2:-${GUIDEWIRE_WEB:-}}"
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 PYTHON="$ROOT/.venv/bin/python"
 
@@ -34,6 +35,12 @@ cloudflared tunnel --no-autoupdate --url "http://localhost:$PORT" 2>&1 | while I
     echo "  Guide console (phone or laptop) : $url"
     echo "  Guest screen  (guests' phones)  : $url/guest"
     echo "  On this laptop                  : http://localhost:$PORT"
+    if [ -n "$WEB" ]; then
+      echo
+      echo "  On Vercel (share these):"
+      echo "  Guide (Noor) : ${WEB%/}/?api=$url"
+      echo "  Guests       : ${WEB%/}/guest?api=$url"
+    fi
     echo
     echo "Press Ctrl+C to stop the tunnel and the server."
   fi

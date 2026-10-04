@@ -104,6 +104,19 @@ powershell -ExecutionPolicy Bypass -File share.ps1      # Windows
 
 It prints two links: the first for the guide's phone, `/guest` for each visitor. The tunnel only carries the pages. Speech recognition, translation and suggestions still run on the laptop. Without internet, use the laptop and phones on the same local Wi-Fi over HTTPS, as above.
 
+### Hosted pages on Vercel
+
+The pages can be hosted on Vercel, so anyone can open them from a normal link, while the AI keeps running on the laptop. `vercel.json` deploys only the `static/` pages; the laptop is reached through the HTTPS tunnel from the share script.
+
+1. Import this repo at [vercel.com/new](https://vercel.com/new) and deploy. No settings needed.
+2. On the laptop, start the AI and the tunnel with your Vercel address:
+   ```bash
+   powershell -ExecutionPolicy Bypass -File share.ps1 -Web https://your-app.vercel.app
+   ```
+3. It prints two links: one for the guide, and one with `/guest` for visitors. Each carries the laptop's address (`?api=…`), and the pages remember it.
+
+The laptop must stay on and online while people use the links, and a new tunnel address is printed each time the script restarts. Opening the pages without a laptop address shows a box to paste it in.
+
 ## Using it on a tour
 
 - Tap the **stop** you're at. Questions are credited to that stop.

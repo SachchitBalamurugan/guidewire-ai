@@ -6,11 +6,13 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import json
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
 from fastapi import Body, FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -76,6 +78,17 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Guidewire", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+# The pages can also be hosted on Vercel (vercel.json) and call this laptop over
+# an HTTPS tunnel. Allow those origins; set CORS_ORIGIN_REGEX for a custom domain.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origin_regex=os.getenv(
+        "CORS_ORIGIN_REGEX", r"https://[a-z0-9-]+\.vercel\.app|http://(localhost|127\.0\.0\.1)(:\d+)?"
+    ),
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.middleware("http")

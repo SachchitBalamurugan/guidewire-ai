@@ -1,5 +1,76 @@
 // Shared by the guide console and the guest screen.
 
+// Where the AI runs. When the laptop serves these pages, it's this same address.
+// When the pages are hosted elsewhere (Vercel; see vercel.json), they talk to the
+// laptop's HTTPS address, given once as ?api=https://… and remembered.
+const GW = (() => {
+  const KEY = "guidewire.api";
+  const remote = window.GW_STATIC_HOST === true;
+  let api = "";
+  if (remote) {
+    const fromLink = new URLSearchParams(location.search).get("api");
+    try {
+      if (fromLink) localStorage.setItem(KEY, fromLink);
+      api = fromLink || localStorage.getItem(KEY) || "";
+    } catch {
+      api = fromLink || "";
+    }
+    api = api.trim().replace(/\/+$/, "");
+    if (api && !/^https?:\/\//i.test(api)) api = `https://${api}`;
+  }
+
+  if (api) {
+    const nativeFetch = window.fetch.bind(window);
+    window.fetch = (input, init) =>
+      typeof input === "string" && input.startsWith("/api/") ? nativeFetch(api + input, init) : nativeFetch(input, init);
+  }
+
+  const wsUrl = (path) =>
+    api ? api.replace(/^http/i, "ws") + path : `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}${path}`;
+
+  // Links to the guest screen carry the laptop address, so a guest's phone finds it too.
+  const withApi = (href) => (api ? `${href}${href.includes("?") ? "&" : "?"}api=${encodeURIComponent(api)}` : href);
+
+  function connectBox(problem, showApi = false) {
+    const box = document.createElement("div");
+    box.className = "connect";
+    box.innerHTML = `
+      <form class="connect-card">
+        <h2>Connect to the Guidewire laptop</h2>
+        <p>${problem}</p>
+        <label>Laptop link<input name="api" type="url" required placeholder="https://….trycloudflare.com"></label>
+        <button class="btn primary lg" type="submit">Connect</button>
+        <small>The AI runs on a laptop. Start it with <code>share.ps1</code> or <code>share.sh</code>, which prints this link.</small>
+      </form>`;
+    box.querySelector("input").value = api;
+    if (showApi) box.querySelector("p b").textContent = api;
+    box.querySelector("form").onsubmit = (e) => {
+      e.preventDefault();
+      const url = new URL(location.href);
+      url.searchParams.set("api", e.target.api.value.trim());
+      location.href = url.toString();
+    };
+    document.body.append(box);
+  }
+
+  if (remote) {
+    document.addEventListener("DOMContentLoaded", async () => {
+      document.querySelectorAll('a[href^="/guest"]').forEach((a) => a.setAttribute("href", withApi(a.getAttribute("href"))));
+      if (!api) return connectBox("These pages are hosted online. Paste the link of the laptop that runs the AI.");
+      try {
+        const ctl = new AbortController();
+        setTimeout(() => ctl.abort(), 8000);
+        const res = await fetch("/api/health", { signal: ctl.signal });
+        if (!res.ok) throw new Error(res.status);
+      } catch {
+        connectBox("Can't reach the laptop at <b></b>. Check it's on and running <code>share</code>, or paste its new link.", true);
+      }
+    });
+  }
+
+  return { api, remote, wsUrl, withApi };
+})();
+
 const NG = (() => {
   let languages = [];
   let langByCode = {};
@@ -49,7 +120,7 @@ const NG = (() => {
       },
     };
     const open = () => {
-      ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws?role=${role}`);
+      ws = new WebSocket(GW.wsUrl(`/ws?role=${role}`));
       ws.binaryType = "arraybuffer";
       ws.onopen = () => {
         retry = 0;

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "",
+  "buildCommand": "rm -rf dist && mkdir dist && cp -r static dist/static && echo 'window.GW_STATIC_HOST = true;' > dist/static/deploy-config.js",
+  "outputDirectory": "dist",
+  "rewrites": [
+    { "source": "/", "destination": "/static/guide.html" },
+    { "source": "/guest", "destination": "/static/guest.html" },
+    { "source": "/insights", "destination": "/static/insights.html" },
+    { "source": "/farm", "destination": "/static/farm.html" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache" },
+        { "key": "Permissions-Policy", "value": "camera=(self), microphone=(self)" }
+      ]
+    }
+  ]
+}

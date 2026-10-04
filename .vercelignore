@@ -1,0 +1,4 @@
+# Vercel only hosts the pages; the AI runs on the laptop (see README).
+/*
+!/static
+!/vercel.json
