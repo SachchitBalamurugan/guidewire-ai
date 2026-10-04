@@ -483,7 +483,11 @@ class TourSession:
             text = str(message.get("text") or "").strip()[:600]
             if text:
                 source = "copilot" if kind == "say_to_guest" else "typed"
-                await self._enqueue(("text", {"text": text, "lang": self.guide_lang, "speaker": "guide", "source": source}))
+                job = {"text": text, "lang": self.guide_lang, "speaker": "guide", "source": source}
+                english = str(message.get("en") or "").strip()[:600]
+                if kind == "say_to_guest" and english:
+                    job["source_en"] = english
+                await self._enqueue(("text", job))
         elif kind == "demo":
             if self._demo_task is None or self._demo_task.done():
                 self.demo = True
@@ -587,6 +591,7 @@ class TourSession:
         lang_prob: float = 1.0,
         utt_id: str | None = None,
         ended_at: float | None = None,
+        source_en: str | None = None,
     ) -> dict[str, Any]:
         lang = languages.normalize(lang) or self.guide_lang
         who = self.resolve_speaker(lang, speaker, role)
@@ -596,7 +601,13 @@ class TourSession:
                 await self.hub.broadcast("tour_state", **self.hub.state())
             self._note_guest_language(lang)
 
-        text_en, ok_en = await self._translate(text, lang, "en")
+        # A co-pilot line already exists in English: translate guests' copies
+        # from that original instead of from Noor's language (one hop, not two).
+        src_text, src_lang = (source_en, "en") if source_en and lang != "en" else (text, lang)
+        if source_en:
+            text_en, ok_en = source_en, True
+        else:
+            text_en, ok_en = await self._translate(text, lang, "en")
         translations: dict[str, str] = {}
         if who == "guest":
             text_guide, ok_guide = await self._translate(text, lang, self.guide_lang)
@@ -604,7 +615,9 @@ class TourSession:
         else:
             text_guide, ok_guide = text, True
             targets = [code for code in self.translation_targets() if code != lang]
-            translations, ok_guest = await self._translate_many(text, lang, targets)
+            translations, ok_guest = await self._translate_many(src_text, src_lang, targets)
+            if src_lang in targets:
+                translations[src_lang] = src_text
             text_guest = translations.get(self.guest_lang or "", text)
 
         self._turn_seq += 1

@@ -111,7 +111,13 @@
     $("typeInput").value = "";
   };
 
-  $("sayBtn").onclick = () => current && sayToGuest(options()[selected]?.say || current.say);
+  $("sayBtn").onclick = () => {
+    if (!current) return;
+    const opt = options()[selected];
+    // Send the co-pilot's English original too, so guest screens are translated
+    // from it rather than from Noor's language (one translation, not two).
+    sayToGuest(opt?.say || current.say, opt?.say_en || current.say_en);
+  };
   $("copyBtn").onclick = async () => {
     if (!current) return;
     try {
@@ -122,8 +128,8 @@
     }
   };
 
-  function sayToGuest(text) {
-    ws.send({ type: "say_to_guest", text });
+  function sayToGuest(text, en) {
+    ws.send({ type: "say_to_guest", text, en });
     NG.toast("Sent to the guest screen");
   }
 

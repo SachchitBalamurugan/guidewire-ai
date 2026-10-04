@@ -133,6 +133,32 @@ def test_say_to_guest_records_a_guide_turn_and_marks_suggestion_used():
     assert guest.of("guest_line")[-1]["lines"]["fr"]["text"].startswith("[fr] About five kilos")
 
 
+def test_say_to_guest_translates_from_the_english_original_not_twice():
+    async def scenario():
+        hub = make_hub()
+        guide, guest = FakeSocket(), FakeSocket()
+        guide_client = hub.add(guide, "guide")
+        hub.add(guest, "guest")
+        session = await hub.start({"guide_lang": "ar"})
+        await session.process_turn("Est-ce qu'on peut en acheter ?", "fr", "guest")
+        await settle(session)
+        await session.handle_message(guide_client, {
+            "type": "say_to_guest",
+            "text": "[ar] Yes, the 500 ml bottle is 8 JOD.",
+            "en": "Yes, the 500 ml bottle is 8 JOD.",
+        })
+        await settle(session)
+        return session, guest
+
+    session, guest = run(scenario())
+    turn = session.turns[-1]
+    assert turn["source"] == "copilot"
+    assert turn["text"] == "[ar] Yes, the 500 ml bottle is 8 JOD."
+    assert turn["text_en"] == "Yes, the 500 ml bottle is 8 JOD."
+    # one hop from English, not Arabic -> French
+    assert guest.of("guest_line")[-1]["lines"]["fr"]["text"] == "[fr] Yes, the 500 ml bottle is 8 JOD."
+
+
 def tone(ms, amp=8000):
     return b"".join(struct.pack("<h", int(amp * math.sin(2 * math.pi * 220 * i / 16000))) for i in range(16 * ms))
 
