@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Guest Screen</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/theme.css">
+  <link rel="stylesheet" href="/static/guest.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="leaf"></span><div id="farmName">Welcome<br><small id="tourStatus">Waiting for the tour to start…</small></div></div>
+    <div class="row guest-controls">
+      <label class="field inline">🌐<select id="myLang" aria-label="Your language"></select></label>
+      <button id="soundBtn" class="accent">🔇 Tap for sound</button>
+    </div>
+  </header>
+
+  <main class="guest">
+    <section class="now card" aria-live="assertive">
+      <h2 id="nowLabel">Your guide says</h2>
+      <p id="nowText" class="now-text" dir="auto">…</p>
+      <p id="nowOrig" class="small muted" dir="auto"></p>
+      <p id="liveCap" class="live-cap hidden" dir="auto" aria-live="polite"></p>
+      <ol id="earlier" class="earlier" reversed></ol>
+    </section>
+
+    <section class="ask card">
+      <div class="tabs" role="tablist">
+        <button role="tab" data-tab="speak" class="on">🎙 Speak</button>
+        <button role="tab" data-tab="type">⌨ Type</button>
+        <button role="tab" data-tab="blink">👁 Blink</button>
+      </div>
+
+      <div class="tab" id="tab-speak">
+        <p class="muted">Ask your question in any language. Your guide sees it in their language.</p>
+        <button id="guestMic" class="primary big">🎙 Start speaking</button>
+        <p class="small muted">The tour microphone also hears you. Use this if you're far from the guide.</p>
+      </div>
+
+      <div class="tab hidden" id="tab-type">
+        <p class="small muted">Tap a question, or type your own.</p>
+        <div id="tapGrid" class="tap-grid"></div>
+        <form id="typeForm" class="col-form">
+          <textarea id="typeText" rows="3" placeholder="Type your question…" dir="auto"></textarea>
+          <button class="primary" type="submit">Send to guide</button>
+        </form>
+      </div>
+
+      <div class="tab hidden" id="tab-blink">
+        <div class="blink-wrap">
+          <div class="cam">
+            <video id="cam" playsinline muted></video>
+            <div id="eyeState" class="eye-state">camera off</div>
+          </div>
+          <div class="blink-panel">
+            <div class="ring-row">
+              <div class="ring" id="ring"><span id="ringLabel">·</span></div>
+              <div>
+                <div class="pending"><span id="pendingCode" class="code"></span> <span id="pendingPreview" class="preview"></span></div>
+                <div class="typed" id="typed" aria-live="polite"></div>
+              </div>
+            </div>
+            <div class="row">
+              <button id="camBtn" class="primary">Start camera</button>
+              <button id="calBtn">Calibrate</button>
+              <button id="blinkDemoBtn">Watch demo</button>
+            </div>
+            <div class="row">
+              <button id="blinkSend" class="accent">Send (·−·−·)</button>
+              <button id="blinkClear">Clear</button>
+            </div>
+            <p class="small muted">Close both eyes for ½ s = dot · 1½ s = dash · 3 s = delete. Pause to finish a letter. <b>··−−</b> = space, <b>·−·−·</b> = send. No camera? Hold <kbd>Space</kbd>.</p>
+          </div>
+        </div>
+        <details class="shortcuts" open>
+          <summary>Quick words: blink the word, it sends the full question</summary>
+          <div id="shortcutGrid" class="shortcut-grid"></div>
+        </details>
+      </div>
+
+      <div id="sentList" class="sent"></div>
+    </section>
+  </main>
+
+  <script src="/static/common.js"></script>
+  <script src="/static/blink.bundle.js"></script>
+  <script src="/static/guest.js"></script>
+</body>
+</html>

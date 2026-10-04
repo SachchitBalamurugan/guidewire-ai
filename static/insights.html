@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Farm Insights</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/theme.css">
+  <link rel="stylesheet" href="/static/insights.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="leaf"></span><div>Noor Guide<br><small>Insights</small></div></div>
+    <nav class="nav">
+      <a href="/">Guide console</a>
+      <a href="/guest" target="_blank" rel="noopener">Guest screen ↗</a>
+      <a href="/insights" class="active">Insights</a>
+    </nav>
+  </header>
+
+  <main class="insights">
+    <section class="hero card">
+      <div>
+        <h1>What your visitors value</h1>
+        <p class="muted">Built from your tour conversations and your reviews, in any language. Every point links to the reviews or tours behind it.</p>
+      </div>
+      <div class="row">
+        <button class="primary" id="genBtn">Generate insights</button>
+        <span id="genStatus" class="small muted"></span>
+      </div>
+      <div class="row kpis" id="kpis"></div>
+    </section>
+
+    <section class="recs" id="recs">
+      <div class="card"><h2>Keep doing</h2><ul id="keep" class="rec-list"></ul></div>
+      <div class="card"><h2>Fix next</h2><ul id="fix" class="rec-list"></ul></div>
+      <div class="card"><h2>Next product to build</h2><ul id="ideas" class="rec-list"></ul></div>
+    </section>
+
+    <section class="charts">
+      <div class="card"><h2>Questions by stop · all tours</h2><div id="stopBars" class="bars"></div></div>
+      <div class="card"><h2>Questions by topic · all tours</h2><div id="topicBars" class="bars"></div></div>
+      <div class="card"><h2>Reviews: praised</h2><div id="praiseBars" class="bars"></div></div>
+      <div class="card"><h2>Reviews: complaints</h2><div id="complaintBars" class="bars"></div></div>
+    </section>
+
+    <section class="copy">
+      <div class="card">
+        <div class="row"><h2>Listing text</h2><span class="spacer"></span><button class="ghost small-btn" data-copy="listing">Copy</button></div>
+        <p id="listing" class="copy-text muted">Generate insights to draft this.</p>
+      </div>
+      <div class="card">
+        <div class="row"><h2>Follow-up message for guests</h2><span class="spacer"></span><button class="ghost small-btn" data-copy="followUp">Copy</button></div>
+        <p id="followUp" class="copy-text muted">Generate insights to draft this.</p>
+        <p class="small muted">Noor Guide never sends messages. Copy it into WhatsApp yourself.</p>
+      </div>
+    </section>
+
+    <section class="two">
+      <div class="card reviews">
+        <div class="row"><h2>Reviews</h2><span class="spacer"></span><span id="reviewCount" class="chip">0</span></div>
+        <textarea id="reviewInput" rows="4" placeholder="Paste reviews here: one per paragraph, or a CSV with a 'text' column. Any language."></textarea>
+        <div class="row">
+          <button id="addReviews">Add reviews</button>
+          <label class="btn file-btn">Upload CSV<input type="file" id="reviewFile" accept=".csv,.txt" hidden></label>
+          <button id="sampleReviews">Load sample reviews</button>
+          <span class="spacer"></span>
+          <button id="clearReviews" class="ghost danger">Clear</button>
+        </div>
+        <div id="reviewList" class="review-list"></div>
+      </div>
+
+      <div class="card tours">
+        <h2>Tours</h2>
+        <div id="tourList" class="tour-list"></div>
+        <div id="tourReport" class="tour-report"></div>
+      </div>
+    </section>
+
+    <section class="card briefing">
+      <details>
+        <summary><h2 style="display:inline">Farm briefing</h2> <span class="small muted">: the facts, stops, products and FAQ the co-pilot is allowed to use</span></summary>
+        <textarea id="profileJson" rows="18" spellcheck="false"></textarea>
+        <div class="row"><button class="primary" id="saveProfile">Save briefing</button><span id="profileStatus" class="small muted"></span></div>
+      </details>
+    </section>
+  </main>
+
+  <script src="/static/common.js"></script>
+  <script src="/static/insights.js"></script>
+</body>
+</html>

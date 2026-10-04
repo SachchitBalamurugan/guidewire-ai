@@ -1,0 +1,59 @@
+.guest { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; padding: 16px 20px; max-width: 1280px; margin: 0 auto; }
+.guest-controls { margin-left: auto; }
+.field.inline { flex-direction: row; align-items: center; gap: 6px; font-size: 18px; }
+
+.now { display: flex; flex-direction: column; gap: 8px; min-height: 60vh; }
+.now-text { font-family: var(--serif); font-size: clamp(26px, 3.4vw, 40px); line-height: 1.25; margin: 8px 0 0; }
+.now-text.fresh { animation: fade 0.6s ease; }
+@keyframes fade { from { opacity: 0.2; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.earlier { margin: 16px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; color: var(--muted); font-size: 15px; border-top: 1px solid var(--border); padding-top: 12px; }
+
+.ask { display: flex; flex-direction: column; gap: 14px; }
+.tabs { display: flex; gap: 6px; }
+.tabs button { flex: 1; justify-content: center; font-size: 16px; padding: 10px; }
+.big { font-size: 20px; padding: 16px 24px; width: 100%; justify-content: center; }
+.col-form { display: flex; flex-direction: column; gap: 8px; }
+.col-form textarea { font-size: 18px; }
+
+.blink-wrap { display: grid; grid-template-columns: 220px 1fr; gap: 14px; align-items: start; }
+.cam { position: relative; border-radius: 12px; overflow: hidden; background: var(--surface-2); aspect-ratio: 4 / 3; }
+.cam video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: block; }
+.eye-state { position: absolute; left: 8px; bottom: 8px; background: rgba(0, 0, 0, 0.6); color: #fff; font-size: 12px; padding: 2px 8px; border-radius: 999px; }
+.eye-state.closed { background: var(--terra); }
+.blink-panel { display: flex; flex-direction: column; gap: 10px; }
+.ring-row { display: flex; gap: 14px; align-items: center; }
+.ring {
+  --p: 0; --c: var(--olive);
+  width: 64px; height: 64px; border-radius: 50%; flex: none;
+  background: conic-gradient(var(--c) calc(var(--p) * 1turn), var(--surface-2) 0);
+  display: grid; place-items: center;
+}
+.ring span { width: 50px; height: 50px; border-radius: 50%; background: var(--surface); display: grid; place-items: center; font-size: 20px; font-weight: 700; }
+.pending { font-size: 26px; min-height: 34px; }
+.pending .code { letter-spacing: 4px; font-weight: 700; color: var(--terra); }
+.pending .preview { color: var(--muted); font-size: 18px; }
+.typed { font-family: ui-monospace, Consolas, monospace; font-size: 26px; min-height: 36px; letter-spacing: 1px; word-break: break-word; }
+.typed:empty::before { content: "…"; color: var(--muted); }
+kbd { border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; font-size: 11px; }
+
+.shortcuts summary { cursor: pointer; font-size: 14px; color: var(--muted); }
+.shortcut-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; margin-top: 8px; }
+.shortcut { font-size: 12px; padding: 6px 8px; border-radius: 8px; background: var(--surface-2); }
+.shortcut b { display: block; font-size: 13px; }
+.shortcut .code { color: var(--terra); letter-spacing: 1px; }
+
+.sent { display: flex; flex-direction: column; gap: 6px; }
+.sent .item { font-size: 14px; background: var(--sky-soft); border-radius: 10px; padding: 6px 10px; }
+
+@media (max-width: 900px) {
+  .guest { grid-template-columns: 1fr; padding: 12px 16px; }
+  .now { min-height: auto; }
+  .blink-wrap { grid-template-columns: 1fr; }
+  .cam { max-width: 280px; }
+}
+
+.live-cap { margin: 0; padding: 8px 12px; border-radius: 10px; background: var(--surface-2); color: var(--muted); font-size: 18px; }
+.live-cap::before { content: "🎙 "; }
+.tap-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; margin-bottom: 12px; }
+.tap-grid button { justify-content: flex-start; text-align: left; font-size: 15px; padding: 10px 12px; min-height: 52px; }
+.tap-grid button.sent { background: var(--olive-soft); border-color: var(--olive); }

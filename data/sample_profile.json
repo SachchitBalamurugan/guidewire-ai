@@ -1,0 +1,391 @@
+{
+  "business_name": "Noor's Olive & Herb Farm",
+  "operator_name": "Noor",
+  "location": "Ondera, Jordan Valley",
+  "guide_language": "en",
+  "currency": "JOD",
+  "description": "A family olive and herb farm. Visitors walk the groves, see the stone olive press, pick za'atar and sage, and finish with a home-cooked lunch in the courtyard.",
+  "tour_length": "about 2.5 hours",
+  "stops": [
+    {
+      "id": "welcome",
+      "name": "Welcome & tea",
+      "facts": [
+        "The farm has been in my family for four generations.",
+        "Tea is sage tea from herbs grown on the farm."
+      ]
+    },
+    {
+      "id": "grove",
+      "name": "Olive grove",
+      "facts": [
+        "There are about 600 olive trees; the oldest are estimated to be over 300 years old.",
+        "Harvest runs from mid-October to December, and visitors can join the harvest on Saturday tours.",
+        "The trees are rain-fed with no irrigation."
+      ]
+    },
+    {
+      "id": "press",
+      "name": "Stone olive press",
+      "facts": [
+        "The press is a traditional stone mill, still used for small batches.",
+        "About 5 kg of olives make 1 litre of oil.",
+        "Oil is cold-pressed and bottled the same week."
+      ]
+    },
+    {
+      "id": "herbs",
+      "name": "Herb garden",
+      "facts": [
+        "Za'atar, sage, mint and chamomile grow here.",
+        "Za'atar is dried in the shade for about ten days and mixed with sesame and sumac."
+      ]
+    },
+    {
+      "id": "kitchen",
+      "name": "Courtyard lunch",
+      "facts": [
+        "Lunch is maqluba or musakhan depending on the day, cooked by my mother.",
+        "Vegetarian and gluten-free plates are available with one day's notice."
+      ]
+    }
+  ],
+  "topics": [
+    {
+      "id": "history",
+      "label": "Family & farm history",
+      "keywords": [
+        "history",
+        "old",
+        "family",
+        "generation",
+        "year",
+        "grandfather",
+        "since",
+        "ancient"
+      ]
+    },
+    {
+      "id": "olive_oil",
+      "label": "Olive oil & pressing",
+      "keywords": [
+        "oil",
+        "press",
+        "olive",
+        "mill",
+        "litre",
+        "liter",
+        "cold",
+        "bottle",
+        "extra virgin"
+      ]
+    },
+    {
+      "id": "harvest",
+      "label": "Harvest & seasons",
+      "keywords": [
+        "harvest",
+        "season",
+        "pick",
+        "october",
+        "november",
+        "december",
+        "rain",
+        "water",
+        "irrigation"
+      ]
+    },
+    {
+      "id": "food",
+      "label": "Food & cooking",
+      "keywords": [
+        "food",
+        "lunch",
+        "cook",
+        "recipe",
+        "eat",
+        "taste",
+        "dish",
+        "maqluba",
+        "musakhan",
+        "vegetarian",
+        "gluten"
+      ]
+    },
+    {
+      "id": "herbs",
+      "label": "Herbs & za'atar",
+      "keywords": [
+        "zaatar",
+        "za'atar",
+        "herb",
+        "sage",
+        "mint",
+        "thyme",
+        "chamomile",
+        "sumac",
+        "tea"
+      ]
+    },
+    {
+      "id": "buying",
+      "label": "Buying products",
+      "keywords": [
+        "buy",
+        "price",
+        "cost",
+        "how much",
+        "sell",
+        "shop",
+        "ship",
+        "take home",
+        "bottle",
+        "jar"
+      ]
+    },
+    {
+      "id": "logistics",
+      "label": "Logistics & access",
+      "keywords": [
+        "toilet",
+        "bathroom",
+        "wheelchair",
+        "parking",
+        "bus",
+        "taxi",
+        "time",
+        "long",
+        "walk",
+        "rest",
+        "photo"
+      ]
+    },
+    {
+      "id": "booking",
+      "label": "Booking & coming back",
+      "keywords": [
+        "book",
+        "booking",
+        "again",
+        "return",
+        "come back",
+        "friends",
+        "group",
+        "workshop",
+        "stay",
+        "overnight"
+      ]
+    }
+  ],
+  "products": [
+    {
+      "name": "Cold-pressed olive oil, 500 ml",
+      "price": "8 JOD"
+    },
+    {
+      "name": "Cold-pressed olive oil, 1 litre",
+      "price": "14 JOD"
+    },
+    {
+      "name": "Za'atar mix, 250 g jar",
+      "price": "5 JOD"
+    },
+    {
+      "name": "Dried sage, 100 g",
+      "price": "3 JOD"
+    },
+    {
+      "name": "Olive-oil soap, 3 bars",
+      "price": "6 JOD"
+    }
+  ],
+  "offers": [
+    "Guests can join the olive harvest on Saturday tours from mid-October to December.",
+    "A 90-minute za'atar-making workshop can be added for 10 JOD per person.",
+    "The tour costs 25 JOD per adult including lunch; children under 12 are 12 JOD."
+  ],
+  "booking": "Book by WhatsApp on the number on the farm card, at least one day ahead. Cash and CliQ payments are accepted.",
+  "faq": [
+    {
+      "q": "How much is the tour?",
+      "a": "It's 25 JOD per adult, lunch included, and 12 JOD for children under 12.",
+      "keywords": [
+        "price",
+        "cost",
+        "how much",
+        "tour",
+        "pay"
+      ]
+    },
+    {
+      "q": "Can I buy the olive oil?",
+      "a": "Yes, the 500 ml bottle is 8 JOD and the litre is 14 JOD. We pressed it this season.",
+      "keywords": [
+        "buy",
+        "oil",
+        "bottle",
+        "price",
+        "sell"
+      ]
+    },
+    {
+      "q": "Can I buy za'atar?",
+      "a": "Yes, a 250 gram jar of our za'atar mix is 5 JOD.",
+      "keywords": [
+        "zaatar",
+        "za'atar",
+        "buy",
+        "jar",
+        "spice"
+      ]
+    },
+    {
+      "q": "How old are the trees?",
+      "a": "We have about 600 trees, and the oldest are thought to be over 300 years old.",
+      "keywords": [
+        "old",
+        "age",
+        "tree",
+        "years"
+      ]
+    },
+    {
+      "q": "How much olive oil comes from the olives?",
+      "a": "About five kilos of olives make one litre of oil.",
+      "keywords": [
+        "how many",
+        "kilo",
+        "litre",
+        "liter",
+        "olives",
+        "make"
+      ]
+    },
+    {
+      "q": "Is there a toilet?",
+      "a": "Yes, there's a clean toilet next to the courtyard.",
+      "keywords": [
+        "toilet",
+        "bathroom",
+        "restroom",
+        "wc"
+      ]
+    },
+    {
+      "q": "Is it wheelchair accessible?",
+      "a": "The courtyard, kitchen and press are step-free. The grove path is gravel, so we use the farm cart there.",
+      "keywords": [
+        "wheelchair",
+        "accessible",
+        "access",
+        "step",
+        "disabled"
+      ]
+    },
+    {
+      "q": "Can we come for the harvest?",
+      "a": "Yes, Saturday tours from mid-October to December include picking olives.",
+      "keywords": [
+        "harvest",
+        "pick",
+        "join",
+        "season",
+        "come back",
+        "friends",
+        "group"
+      ]
+    },
+    {
+      "q": "How do I book again?",
+      "a": "Message us on WhatsApp at least a day ahead, using the number on the farm card.",
+      "keywords": [
+        "book",
+        "again",
+        "whatsapp",
+        "reserve",
+        "friends"
+      ]
+    },
+    {
+      "q": "Is the food vegetarian?",
+      "a": "We can make vegetarian or gluten-free plates with a day's notice.",
+      "keywords": [
+        "vegetarian",
+        "vegan",
+        "gluten",
+        "allergy",
+        "diet"
+      ]
+    },
+    {
+      "q": "Is the oil organic?",
+      "a": "It isn't certified organic, so we don't call it that. The trees are rain-fed and I'm happy to explain exactly how we look after them.",
+      "keywords": [
+        "organic",
+        "bio",
+        "biological",
+        "chemical",
+        "pesticide",
+        "spray"
+      ]
+    },
+    {
+      "q": "Can you ship it abroad?",
+      "a": "I'm sorry, we don't ship abroad. You're welcome to take bottles with you today.",
+      "keywords": [
+        "ship",
+        "send",
+        "post",
+        "mail",
+        "deliver",
+        "abroad",
+        "france",
+        "germany",
+        "home country"
+      ]
+    },
+    {
+      "q": "Do you water the trees?",
+      "a": "No, the trees are rain-fed. We never irrigate them.",
+      "keywords": [
+        "water",
+        "irrigate",
+        "irrigation",
+        "rain",
+        "watering"
+      ]
+    },
+    {
+      "q": "Can I taste it?",
+      "a": "Of course, please try some.",
+      "keywords": [
+        "taste",
+        "try",
+        "sample"
+      ]
+    },
+    {
+      "q": "What is this tea?",
+      "a": "It's sage tea, made from herbs we grow right here on the farm.",
+      "keywords": [
+        "tea",
+        "drink"
+      ]
+    }
+  ],
+  "claims_not_to_make": [
+    "Do not call the oil organic; it is not certified.",
+    "Do not promise shipping abroad; the farm does not ship.",
+    "Do not invent discounts."
+  ],
+  "quick_phrases": [
+    "Welcome to our farm.",
+    "Please follow me.",
+    "Do you have any questions?",
+    "Please watch your step here.",
+    "Let's take a short break.",
+    "Would you like to taste it?",
+    "Lunch is ready, please come and sit down.",
+    "Thank you so much for visiting us today."
+  ]
+}

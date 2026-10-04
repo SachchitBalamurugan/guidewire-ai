@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Noor Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/theme.css">
+  <link rel="stylesheet" href="/static/guide.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="leaf"></span><div>Noor Guide<br><small>Tour co-pilot</small></div></div>
+    <div class="pills" id="enginePills"></div>
+    <nav class="nav">
+      <a href="/" class="active">Guide console</a>
+      <a href="/guest" target="_blank" rel="noopener">Guest screen ↗</a>
+      <a href="/insights">Insights</a>
+    </nav>
+  </header>
+
+  <section id="setup" class="setup card">
+    <div>
+      <h1>Start a tour</h1>
+      <p class="muted">Noor Guide listens to the tour, translates between you and your guests, and suggests what to say next. Everything runs on this device.</p>
+    </div>
+    <div class="row setup-fields">
+      <label class="field">Tour type<select id="tourType"></select></label>
+      <label class="field">Your language<select id="guideLang"></select></label>
+      <label class="field">Guests' language<select id="guestLangStart"></select></label>
+    </div>
+    <div class="row">
+      <button class="primary" id="startBtn">Start tour</button>
+      <button id="demoBtn">▶ Play demo tour</button>
+      <span class="muted small">The demo plays a French/German group with a blink-input guest.</span>
+    </div>
+  </section>
+
+  <section id="live" class="live hidden">
+    <div class="controls card">
+      <div class="stops" id="stopRail" aria-label="Tour stops"></div>
+      <div class="row controls-right">
+        <button id="micBtn" class="accent">🎙 Start listening</button>
+        <span class="meter" aria-hidden="true"><span id="meterFill"></span></span>
+        <div class="seg" role="group" aria-label="Who is speaking">
+          <button data-mode="auto" class="on">Auto</button>
+          <button data-mode="guide">Me</button>
+          <button data-mode="guest">Visitor</button>
+        </div>
+        <label class="field inline">Guests<select id="guestLang"></select></label>
+        <button class="danger" id="stopBtn">End tour</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="col transcript-col card">
+        <div class="row"><h2>Conversation</h2><span class="spacer"></span><span id="listening" class="chip live hidden">● listening</span></div>
+        <div id="transcript" class="transcript" aria-live="polite"></div>
+        <div id="quickPhrases" class="quick-phrases" aria-label="Quick phrases"></div>
+        <form id="typeForm" class="type-form row">
+          <input type="text" id="typeInput" placeholder="Type to your guests (translated and spoken)…" autocomplete="off">
+          <button type="submit">Send</button>
+        </form>
+      </div>
+
+      <div class="col">
+        <div class="card suggestion-card" id="suggestionCard">
+          <div class="row"><h2>Say next</h2><span class="spacer"></span><span id="thinking" class="chip gold hidden">thinking…</span><span id="sugSource" class="chip"></span></div>
+          <p id="sugText" class="sug-text muted">Suggestions appear when visitors speak.</p>
+          <div id="sugOptions" class="options" role="tablist" aria-label="Suggestion options"></div>
+          <p id="sugWhy" class="small muted"></p>
+          <div id="sugGuest" class="sug-guest hidden"></div>
+          <div class="row">
+            <button class="primary" id="sayBtn" disabled>🔊 Say it for me</button>
+            <button id="copyBtn" disabled>Copy</button>
+            <span id="sugStep" class="chip terra hidden"></span>
+          </div>
+          <p class="small muted keys">Keys: <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> say an option · <kbd>Enter</kbd> say selected · <kbd>M</kbd> mic · <kbd>[</kbd><kbd>]</kbd> stop</p>
+          <details class="history">
+            <summary class="small muted">Earlier suggestions</summary>
+            <ol id="sugHistory"></ol>
+          </details>
+        </div>
+
+        <div class="card engagement">
+          <div class="row"><h2>Where guests are engaged</h2><span class="spacer"></span><span class="chip" id="qCount">0 questions</span></div>
+          <div id="stopBars" class="bars"></div>
+          <div class="row stats">
+            <span class="chip terra" id="hotTopic">Hot topic: –</span>
+            <span class="chip" id="mood">Mood: neutral</span>
+            <span class="chip sky" id="blinkCount">👁 0 blink</span>
+            <span class="chip olive" id="used">0/0 suggestions used</span>
+          </div>
+          <div id="intents" class="row"></div>
+          <div id="deferredWrap" class="hidden">
+            <h2 class="sub">No answer ready</h2>
+            <ul id="deferred" class="small"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <dialog id="reportDialog" class="report">
+    <div class="row"><h1>Tour report</h1><span class="spacer"></span><button id="closeReport" class="ghost">✕</button></div>
+    <div id="reportBody"></div>
+    <div class="row"><a href="/insights" class="btn">Open insights</a><button class="primary" id="newTour">New tour</button></div>
+  </dialog>
+
+  <script src="/static/common.js"></script>
+  <script src="/static/guide.js"></script>
+</body>
+</html>
