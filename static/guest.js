@@ -75,7 +75,7 @@
     } catch {
       /* private mode */
     }
-    if (myLang) ws.send({ type: "guest_language", lang: myLang });
+    ws.send({ type: "guest_language", lang: myLang || null });
     refreshTapGrid();
   };
 
@@ -110,7 +110,15 @@
     }
     if (!state.running) return NG.toast("The tour has not started yet.");
     try {
-      mic = await NG.startMic((pcm) => ws.sendBinary(pcm));
+      // While this screen is reading a translation aloud, its own mic would
+      // hear it and send it back as a visitor question. Hold the mic until
+      // the speech (plus a short tail) is over.
+      let quietUntil = 0;
+      mic = await NG.startMic((pcm) => {
+        const now = performance.now();
+        if (window.speechSynthesis?.speaking) quietUntil = now + 600;
+        if (now >= quietUntil) ws.sendBinary(pcm);
+      });
       $("guestMic").textContent = "■ Stop";
       $("guestMic").classList.add("on");
     } catch (err) {
@@ -253,6 +261,9 @@
   // ---------- Messages ----------
   function onMessage(msg) {
     if (msg.type === "tour_state") {
+      // Re-announce the language when a tour starts, in case the server
+      // restarted since this screen chose it.
+      if (msg.running && !state.running && myLang) ws.send({ type: "guest_language", lang: myLang });
       state = msg;
       $("tourStatus").textContent = msg.running ? "Tour in progress" : "Waiting for the tour to start…";
       const auto = $("myLang").options[0];
@@ -266,6 +277,9 @@
       // the screen reacts before the translation lands.
       $("liveCap").textContent = msg.text;
       $("liveCap").classList.remove("hidden");
+    } else if (msg.type === "mic_state" && msg.role === "guide") {
+      $("guideMuted").classList.toggle("hidden", !msg.muted);
+      if (msg.muted) $("liveCap").classList.add("hidden");
     } else if (msg.type === "partial_cancel") {
       $("liveCap").classList.add("hidden");
     } else if (msg.type === "transcript" && msg.entry.utt) {

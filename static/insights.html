@@ -38,6 +38,18 @@
       <div class="card"><h2>Next product to build</h2><ul id="ideas" class="rec-list"></ul></div>
     </section>
 
+    <section class="card ask" aria-labelledby="askTitle">
+      <div class="row"><h2 id="askTitle">Ask about your business</h2><span class="spacer"></span><span class="small muted">Type or speak, in any language</span></div>
+      <form id="askForm" class="ask-form">
+        <button type="button" id="askMic" class="mic-btn" title="Speak your question (click again to stop)" aria-pressed="false">🎙</button>
+        <input type="text" id="askInput" placeholder="e.g. What do French guests ask about most?" autocomplete="off" dir="auto">
+        <button type="submit" class="primary" id="askBtn">Ask</button>
+      </form>
+      <div id="askStatus" class="small muted" aria-live="polite"></div>
+      <div class="ask-examples" id="askExamples"></div>
+      <div id="askAnswers" class="ask-answers" aria-live="polite"></div>
+    </section>
+
     <section class="charts">
       <div class="card"><h2>Questions by stop · all tours</h2><div id="stopBars" class="bars"></div></div>
       <div class="card"><h2>Questions by topic · all tours</h2><div id="topicBars" class="bars"></div></div>

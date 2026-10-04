@@ -205,6 +205,55 @@ async def translate(request: Request, payload: dict[str, Any] = Body(...)) -> JS
     return JSONResponse({"text": out, "translated": engines.translator.ready})
 
 
+@app.post("/api/transcribe")
+async def transcribe(request: Request) -> JSONResponse:
+    """Voice questions on the Insights page: raw 16 kHz mono PCM in, text out,
+    on-device Whisper."""
+
+    pcm = await request.body()
+    if len(pcm) > 16000 * 2 * 60:
+        raise HTTPException(413, "Keep voice questions under a minute.")
+    if len(pcm) < 16000:  # under half a second
+        return JSONResponse({"text": "", "lang": None})
+    stt = _hub(request).engines.stt
+    try:
+        result = await asyncio.to_thread(stt.transcribe, pcm, None)
+    except Exception as exc:
+        raise HTTPException(503, f"Speech recognition is unavailable: {exc}") from exc
+    return JSONResponse({"text": result.text, "lang": result.lang})
+
+
+@app.post("/api/ask")
+async def ask_question(request: Request, payload: dict[str, Any] = Body(...)) -> JSONResponse:
+    from ask import answer
+    from insights import detect_text_language
+
+    question = str(payload.get("question") or "").strip()[:500]
+    if not question:
+        raise HTTPException(400, "Ask a question.")
+    engines = _hub(request).engines
+    engines.llm_available = await engines.llm.available()
+    lang = languages.normalize(payload.get("lang")) or detect_text_language(question)
+    question_en = question
+    if lang != "en":
+        question_en = await asyncio.to_thread(engines.translator.translate, question, lang, "en")
+    result = await answer(
+        question_en,
+        storage.all_tours_full(),
+        storage.list_reviews(),
+        storage.get_profile(),
+        engines.llm,
+        engines.llm_available,
+    )
+    result["question_en"] = question_en
+    result["answer_en"] = result["answer"]
+    result["lang"] = lang
+    if lang != "en":
+        result["answer"] = await asyncio.to_thread(engines.translator.translate, result["answer"], "en", lang)
+    result["bcp47"] = languages.bcp47(lang)
+    return JSONResponse(result)
+
+
 @app.post("/api/translate_batch")
 async def translate_batch(request: Request, payload: dict[str, Any] = Body(...)) -> JSONResponse:
     """Labels for the guest screen's question tiles, in the guest's language."""
@@ -265,6 +314,10 @@ async def _handle_text(hub: TourHub, client: Any, raw: str) -> None:
     elif kind == "stop":
         if client.role == "guide" and hub.session is not None:
             await hub.session.stop()
+    elif kind == "guest_language" and client.role == "guest":
+        client.lang = languages.normalize(message.get("lang"))
+        if hub.session is not None and hub.session.running:
+            await hub.session.handle_message(client, message)
     elif hub.session is not None and hub.session.running:
         # Guests may only speak, blink, type, or choose their own screen's language.
         if client.role == "guest" and kind not in {"guest_text", "guest_language"}:

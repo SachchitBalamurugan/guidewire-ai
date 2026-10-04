@@ -42,12 +42,8 @@
       <div class="stops" id="stopRail" aria-label="Tour stops"></div>
       <div class="row controls-right">
         <button id="micBtn" class="accent">🎙 Start listening</button>
+        <button id="muteBtn" class="hidden" title="Mute (M): nothing you say is heard, translated or sent to guests" aria-pressed="false">🔇 Mute</button>
         <span class="meter" aria-hidden="true"><span id="meterFill"></span></span>
-        <div class="seg" role="group" aria-label="Who is speaking">
-          <button data-mode="auto" class="on">Auto</button>
-          <button data-mode="guide">Me</button>
-          <button data-mode="guest">Visitor</button>
-        </div>
         <label class="field inline">Guests<select id="guestLang"></select></label>
         <button class="danger" id="stopBtn">End tour</button>
       </div>
@@ -56,6 +52,7 @@
     <div class="grid">
       <div class="col transcript-col card">
         <div class="row"><h2>Conversation</h2><span class="spacer"></span><span id="listening" class="chip live hidden">● listening</span></div>
+        <div id="mutedBanner" class="muted-banner hidden" role="status">🔇 Muted: nothing you say is heard, translated or sent to guests. Press <kbd>M</kbd> to unmute.</div>
         <div id="transcript" class="transcript" aria-live="polite"></div>
         <div id="quickPhrases" class="quick-phrases" aria-label="Quick phrases"></div>
         <form id="typeForm" class="type-form row">
@@ -67,7 +64,8 @@
       <div class="col">
         <div class="card suggestion-card" id="suggestionCard">
           <div class="row"><h2>Say next</h2><span class="spacer"></span><span id="thinking" class="chip gold hidden">thinking…</span><span id="sugSource" class="chip"></span></div>
-          <p id="sugText" class="sug-text muted">Suggestions appear when visitors speak.</p>
+          <div class="row situation-row"><span id="sugSituation" class="chip gold hidden"></span><span id="sugAfter" class="small muted"></span></div>
+          <p id="sugText" class="sug-text muted">A suggestion appears after every line, yours or a visitor's.</p>
           <div id="sugOptions" class="options" role="tablist" aria-label="Suggestion options"></div>
           <p id="sugWhy" class="small muted"></p>
           <div id="sugGuest" class="sug-guest hidden"></div>
@@ -76,7 +74,7 @@
             <button id="copyBtn" disabled>Copy</button>
             <span id="sugStep" class="chip terra hidden"></span>
           </div>
-          <p class="small muted keys">Keys: <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> say an option · <kbd>Enter</kbd> say selected · <kbd>M</kbd> mic · <kbd>[</kbd><kbd>]</kbd> stop</p>
+          <p class="small muted keys">Keys: <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> say an option · <kbd>Enter</kbd> say selected · <kbd>M</kbd> mute · <kbd>[</kbd><kbd>]</kbd> stop</p>
           <details class="history">
             <summary class="small muted">Earlier suggestions</summary>
             <ol id="sugHistory"></ol>

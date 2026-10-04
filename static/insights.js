@@ -182,3 +182,129 @@
   const last = await (await fetch("/api/insights")).json();
   if (last.recommendations) renderInsights(last);
 })();
+
+// ---------- Ask about your business ----------
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const { esc } = NG;
+  const examples = [
+    "Where are guests most engaged?",
+    "What do French guests ask about most?",
+    "What should I fix first?",
+    "What do visitors love?",
+    "Which questions couldn't I answer?",
+    "What do people say about the olive press?",
+  ];
+  for (const ex of examples) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = ex;
+    b.onclick = () => ask(ex, "en");
+    $("askExamples").append(b);
+  }
+
+  $("askForm").onsubmit = (e) => {
+    e.preventDefault();
+    const q = $("askInput").value.trim();
+    if (q) ask(q, null);
+  };
+
+  async function ask(question, lang) {
+    $("askInput").value = question;
+    $("askBtn").disabled = true;
+    $("askStatus").textContent = "Looking through your tours and reviews…";
+    try {
+      const res = await fetch("/api/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question, lang }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Request failed");
+      render(question, data);
+      $("askStatus").textContent = "";
+      $("askInput").value = "";
+    } catch (err) {
+      $("askStatus").textContent = `Couldn't answer: ${err.message}`;
+    } finally {
+      $("askBtn").disabled = false;
+    }
+  }
+
+  function render(question, d) {
+    const card = document.createElement("div");
+    card.className = "qa";
+    const ev = (d.evidence || [])
+      .map((id) => `<span class="chip ${/^R\d+$/.test(id) ? "olive" : ""}" ${/^R\d+$/.test(id) ? `data-rev="${esc(id)}"` : ""}>${esc(id)}</span>`)
+      .join("");
+    const snips = (d.snippets || []).map((s) => `<li><b>${esc(s.source === "tour" ? "Tour" : s.source)}:</b> <span dir="auto">${esc(s.text)}</span></li>`).join("");
+    const translated = d.lang && d.lang !== "en" ? `<div class="small muted">EN: ${esc(d.answer_en)}</div>` : "";
+    card.innerHTML = `
+      <div class="q" dir="auto">${esc(question)}</div>
+      <div class="a" dir="auto">${esc(d.answer)}</div>
+      ${translated}
+      ${snips ? `<ul class="snips">${snips}</ul>` : ""}
+      <div class="meta">${ev}<span class="spacer"></span><span>${d.source === "llm" ? "on-device model" : "from your data"}</span><button type="button" class="ghost small-btn speak">🔊 Read aloud</button></div>`;
+    card.querySelector(".speak").onclick = () => {
+      window.speechSynthesis?.cancel();
+      if (!NG.speak(d.answer, d.bcp47)) NG.speak(d.answer_en, "en-US");
+    };
+    $("askAnswers").prepend(card);
+  }
+
+  // Voice: record 16 kHz PCM with the same worklet the tour uses, then let
+  // on-device Whisper transcribe it.
+  let rec = null;
+  let chunks = [];
+  let meterRaf = 0;
+  $("askMic").onclick = async () => {
+    if (rec) return stop();
+    try {
+      chunks = [];
+      rec = await NG.startMic((pcm) => chunks.push(new Uint8Array(pcm)));
+      $("askMic").classList.add("recording");
+      $("askMic").setAttribute("aria-pressed", "true");
+      $("askMic").textContent = "■";
+      const tick = () => {
+        const level = Math.round(rec.level() * 100);
+        $("askStatus").textContent = `Listening… ${"▮".repeat(Math.max(1, Math.round(level / 12)))} click ■ when you're done`;
+        meterRaf = requestAnimationFrame(tick);
+      };
+      tick();
+      // Hard stop at 30 s.
+      setTimeout(() => rec && stop(), 30000);
+    } catch (err) {
+      rec = null;
+      $("askStatus").textContent = `Microphone unavailable: ${err.message}`;
+    }
+  };
+
+  async function stop() {
+    cancelAnimationFrame(meterRaf);
+    rec.stop();
+    rec = null;
+    $("askMic").classList.remove("recording");
+    $("askMic").setAttribute("aria-pressed", "false");
+    $("askMic").textContent = "🎙";
+    const total = chunks.reduce((n, c) => n + c.length, 0);
+    const body = new Uint8Array(total);
+    let at = 0;
+    for (const c of chunks) {
+      body.set(c, at);
+      at += c.length;
+    }
+    $("askStatus").textContent = "Transcribing…";
+    try {
+      const res = await fetch("/api/transcribe", { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Transcription failed");
+      if (!data.text) {
+        $("askStatus").textContent = "I didn't catch that. Try again a little closer to the mic.";
+        return;
+      }
+      ask(data.text, data.lang);
+    } catch (err) {
+      $("askStatus").textContent = err.message;
+    }
+  }
+})();

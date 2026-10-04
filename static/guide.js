@@ -5,6 +5,7 @@
 
   let state = { running: false };
   let mic = null;
+  let muted = false;
   let meterRaf = 0;
   let current = null; // latest suggestion
   const history = [];
@@ -14,14 +15,18 @@
   for (const [slug, label] of Object.entries(meta.tour_types)) $("tourType").append(new Option(label, slug));
   NG.fillLanguageSelect($("guideLang"));
   NG.fillLanguageSelect($("guestLangStart"), { includeAuto: true });
-  NG.fillLanguageSelect($("guestLang"), { includeAuto: true, autoLabel: "Auto-detect" });
+  NG.fillLanguageSelect($("guestLang"), { includeAuto: true, autoLabel: "Auto (from guest screens)" });
 
   const profile = await (await fetch("/api/profile")).json();
   $("guideLang").value = profile.guide_language || "en";
 
   const ws = NG.connect("guide", onMessage, (open) => {
     if (!open) setPill("conn", "Reconnecting…", "warn");
-    else setPill("conn", "Connected", "ok");
+    else {
+      setPill("conn", "Connected", "ok");
+      // A reconnect makes a fresh server-side client; keep it muted if we are.
+      if (muted) ws.send({ type: "mute", muted: true });
+    }
   });
 
   $("startBtn").onclick = () => start(false);
@@ -45,7 +50,10 @@
   $("micBtn").onclick = async () => {
     if (mic) return stopMic();
     try {
-      mic = await NG.startMic((pcm) => ws.sendBinary(pcm));
+      mic = await NG.startMic((pcm) => {
+        if (!muted) ws.sendBinary(pcm);
+      });
+      $("muteBtn").classList.remove("hidden");
       $("micBtn").textContent = "■ Stop listening";
       $("micBtn").classList.remove("accent");
       $("micBtn").classList.add("on");
@@ -59,8 +67,24 @@
     }
   };
 
+  function setMuted(next) {
+    muted = next;
+    ws.send({ type: "mute", muted });
+    const b = $("muteBtn");
+    b.classList.toggle("muted", muted);
+    b.setAttribute("aria-pressed", String(muted));
+    b.textContent = muted ? "🔇 Muted" : "🔇 Mute";
+    $("mutedBanner").classList.toggle("hidden", !muted);
+    document.querySelector(".meter").classList.toggle("muted", muted);
+    if (muted) $("listening").classList.add("hidden");
+  }
+
+  $("muteBtn").onclick = () => setMuted(!muted);
+
   function stopMic() {
     if (!mic) return;
+    if (muted) setMuted(false);
+    $("muteBtn").classList.add("hidden");
     mic.stop();
     mic = null;
     cancelAnimationFrame(meterRaf);
@@ -70,9 +94,6 @@
     $("micBtn").classList.remove("on");
   }
 
-  document.querySelectorAll(".seg button").forEach((btn) => {
-    btn.onclick = () => ws.send({ type: "set_speaker", mode: btn.dataset.mode });
-  });
 
   $("guestLang").onchange = () => ws.send({ type: "pin_language", lang: $("guestLang").value || null });
 
@@ -133,7 +154,9 @@
     } else if (e.key === "Enter" && current && tag !== "BUTTON") {
       sayToGuest(options()[selected]?.say || current.say);
     } else if (e.key.toLowerCase() === "m") {
-      $("micBtn").click();
+      // M starts listening; once listening it toggles mute.
+      if (mic) setMuted(!muted);
+      else $("micBtn").click();
     } else if (e.key === "[" || e.key === "]") {
       const stops = state.stops || [];
       const i = stops.findIndex((x) => x.id === state.current_stop);
@@ -193,8 +216,7 @@
     if (s.running) {
       $("guestLang").value = s.guest_lang_pinned ? s.guest_lang || "" : "";
       const auto = $("guestLang").options[0];
-      auto.textContent = s.guest_lang && !s.guest_lang_pinned ? `Auto (${NG.langName(s.guest_lang)})` : "Auto-detect";
-      document.querySelectorAll(".seg button").forEach((b) => b.classList.toggle("on", b.dataset.mode === s.speaker_mode));
+      auto.textContent = s.guest_lang && !s.guest_lang_pinned ? `Auto (${NG.langName(s.guest_lang)})` : "Auto (from guest screens)";
       renderStops(lastEngagement);
     }
   }
@@ -273,7 +295,9 @@
     current = s;
     const text = $("sugText");
     if (!s) {
-      text.textContent = "Suggestions appear when visitors speak.";
+      text.textContent = "A suggestion appears after every line, yours or a visitor's.";
+      $("sugSituation").classList.add("hidden");
+      $("sugAfter").textContent = "";
       text.className = "sug-text muted";
       $("sugWhy").textContent = "";
       $("sugGuest").classList.add("hidden");
@@ -291,6 +315,9 @@
     void text.offsetWidth;
     text.classList.add("fresh");
     $("sugWhy").textContent = s.why || "";
+    $("sugSituation").textContent = s.situation || "";
+    $("sugSituation").classList.toggle("hidden", !s.situation);
+    $("sugAfter").textContent = s.after === "guide" ? "your next move" : "reply to the visitor";
     $("sugSource").textContent = s.source === "llm" ? "on-device model" : "farm FAQ";
     if (s.guest_lang && s.say_guest && s.say_guest !== s.say) {
       $("sugGuest").innerHTML = `<span class="chip sky">${esc(NG.langName(s.guest_lang))}</span> <span dir="auto">${esc(s.say_guest)}</span>`;

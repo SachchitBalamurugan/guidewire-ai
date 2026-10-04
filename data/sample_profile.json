@@ -13,7 +13,9 @@
       "facts": [
         "The farm has been in my family for four generations.",
         "Tea is sage tea from herbs grown on the farm."
-      ]
+      ],
+      "engage": "Where are you all visiting from today?",
+      "activity": "taste our sage tea"
     },
     {
       "id": "grove",
@@ -22,7 +24,9 @@
         "There are about 600 olive trees; the oldest are estimated to be over 300 years old.",
         "Harvest runs from mid-October to December, and visitors can join the harvest on Saturday tours.",
         "The trees are rain-fed with no irrigation."
-      ]
+      ],
+      "engage": "Do any of you grow fruit trees or olives at home?",
+      "activity": "pick an olive straight from the tree"
     },
     {
       "id": "press",
@@ -31,7 +35,9 @@
         "The press is a traditional stone mill, still used for small batches.",
         "About 5 kg of olives make 1 litre of oil.",
         "Oil is cold-pressed and bottled the same week."
-      ]
+      ],
+      "engage": "Would anyone like to guess how many olives go into one bottle?",
+      "activity": "taste the fresh oil with some bread"
     },
     {
       "id": "herbs",
@@ -39,7 +45,9 @@
       "facts": [
         "Za'atar, sage, mint and chamomile grow here.",
         "Za'atar is dried in the shade for about ten days and mixed with sesame and sumac."
-      ]
+      ],
+      "engage": "Do you cook with za'atar or fresh herbs at home?",
+      "activity": "rub a za'atar leaf and smell it"
     },
     {
       "id": "kitchen",
@@ -47,7 +55,9 @@
       "facts": [
         "Lunch is maqluba or musakhan depending on the day, cooked by my mother.",
         "Vegetarian and gluten-free plates are available with one day's notice."
-      ]
+      ],
+      "engage": "What's a dish from home you think we should try making here?",
+      "activity": "help fold the bread for lunch"
     }
   ],
   "topics": [

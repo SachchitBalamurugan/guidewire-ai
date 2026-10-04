@@ -79,3 +79,10 @@ def test_aggregate_tours():
     assert agg["questions_by_stop"][0]["questions"] == 6
     assert agg["unanswered"] == ["Is it organic?"]
     assert agg["guest_languages"] == {"French": 2}
+
+
+def test_complaint_quotes_are_never_praise():
+    stats = analyse_reviews(reviews())
+    for row in stats["complaints"]:
+        for q in row["quotes"]:
+            assert "fascinating" not in q["text"].lower()

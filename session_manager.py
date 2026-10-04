@@ -31,7 +31,7 @@ except ImportError:  # tests without starlette
 
 import languages
 import storage
-from coach import Coach, CoachResult, Turn
+from coach import Coach, CoachResult, Situation, Turn
 from config import DATA_DIR, Settings, TOUR_TYPES, normalize_tour_type
 from engagement import TourEngagement
 from engines.llm import LLM
@@ -49,6 +49,11 @@ COACH_TIMEOUT_S = 14.0
 # is speaking. A partial costs ~0.15 s of CPU with the short-window encoder.
 PARTIAL_INTERVAL_S = 0.5
 PARTIAL_MIN_SPEECH_MS = 500
+# The laptop mic hears a visitor who is talking into the guest screen. A
+# laptop turn that overlaps guest-screen speech by this share of its length
+# is that same speech picked up twice, and is dropped.
+CROSSTALK_OVERLAP = 0.4
+CROSSTALK_MEMORY_S = 30.0
 DEMO_SCRIPT = DATA_DIR / "demo_tour_script.json"
 
 
@@ -136,6 +141,11 @@ class Client:
     partial_busy: bool = False
     last_partial_at: float = 0.0
     partial_lang: str | None = None
+    muted: bool = False
+    # The language a guest screen chose. Kept on the connection, not the tour,
+    # so a choice made before the tour starts (the usual case) still counts.
+    lang: str | None = None
+    speech_started_at: float = 0.0
 
     @property
     def utt_id(self) -> str:
@@ -152,6 +162,8 @@ class TourHub:
         self.clients: dict[int, Client] = {}
         self.session: TourSession | None = None
         self.stt_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="stt")
+        # (start, end) monotonic times of recent speech from guest screens.
+        self.guest_spans: list[tuple[float, float]] = []
         self.mt_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="mt")
 
     def add(self, websocket: Any, role: str) -> Client:
@@ -177,6 +189,30 @@ class TourHub:
     async def send(self, websocket: Any, message_type: str, **payload: Any) -> None:
         with contextlib.suppress(Exception):
             await websocket.send_json({"type": message_type, **payload})
+
+    def guest_speaking_since(self) -> float | None:
+        """Start time of speech in progress on any guest screen."""
+
+        starts = [c.speech_started_at for c in self.clients.values() if c.role == "guest" and c.vad.in_speech]
+        return min(starts) if starts else None
+
+    def is_crosstalk(self, start: float, end: float) -> bool:
+        """Did a guest screen carry speech for most of [start, end]?"""
+
+        now = time.monotonic()
+        self.guest_spans = [(a, b) for a, b in self.guest_spans if now - b < CROSSTALK_MEMORY_S]
+        spans = list(self.guest_spans)
+        live = self.guest_speaking_since()
+        if live is not None:
+            spans.append((live, now))
+        length = max(0.001, end - start)
+        covered = sum(max(0.0, min(end, b) - max(start, a)) for a, b in spans)
+        return covered / length >= CROSSTALK_OVERLAP
+
+    def screen_languages(self) -> list[str]:
+        """Languages guest screens asked for, most recent choice last."""
+
+        return [c.lang for c in self.clients.values() if c.role == "guest" and c.lang]
 
     def state(self) -> dict[str, Any]:
         if self.session is not None and self.session.running:
@@ -217,7 +253,6 @@ class TourSession:
         self.guest_lang: str | None = None
         self.guest_lang_pinned = False
         self.guest_languages: list[str] = []
-        self.speaker_mode = "auto"  # "auto" | "guide" | "guest"
         self.running = False
         self.demo = False
         self.started_at: str | None = None
@@ -265,7 +300,6 @@ class TourSession:
             "guest_lang_pinned": self.guest_lang_pinned,
             "guest_lang_rtl": languages.is_rtl(self.guest_lang),
             "guest_bcp47": languages.bcp47(self.guest_lang) if self.guest_lang else None,
-            "speaker_mode": self.speaker_mode,
             "current_stop": self.engagement.current_stop,
             "stops": self.engagement.stops,
             "demo": self.demo,
@@ -327,16 +361,20 @@ class TourSession:
     # ---------- Inputs ----------
 
     async def handle_audio(self, client: Client, pcm: bytes) -> None:
-        if not self.running:
+        if not self.running or client.muted:
             return
         for event in client.vad.push(pcm):
             if event.kind == "speech_start":
+                client.speech_started_at = time.monotonic()
                 client.utt_seq += 1
                 client.partial_lang = None
                 await self.hub.broadcast("listening", active=True, role=client.role, utt=client.utt_id)
             elif event.kind == "utterance":
+                ended = time.monotonic()
+                if client.role == "guest":
+                    self.hub.guest_spans.append((ended - event.duration_ms / 1000, ended))
                 try:
-                    self.queue.put_nowait(("audio", (event.pcm, client.role, client.utt_id, time.monotonic(), client.partial_lang)))
+                    self.queue.put_nowait(("audio", (event.pcm, client.role, client.utt_id, ended, client.partial_lang, event.duration_ms)))
                 except asyncio.QueueFull:
                     await self._status("warning", "Speech is arriving faster than it can be transcribed.")
         now = time.monotonic()
@@ -353,6 +391,23 @@ class TourSession:
             self.tasks.add(task)
             task.add_done_callback(self.tasks.discard)
 
+    async def set_muted(self, client: Client, muted: bool) -> None:
+        """Mute is private: speech already in the buffer when it is pressed is
+        thrown away, not transcribed, so a half-said aside never reaches guests."""
+
+        if client.muted == muted:
+            return
+        client.muted = muted
+        if muted:
+            was_speaking = client.vad.in_speech
+            client.vad = EnergyVad(noise_floor=client.vad.noise_floor)
+            if was_speaking:
+                await self.hub.broadcast("partial_cancel", utt=client.utt_id)
+                await self.hub.broadcast("listening", active=False, role=client.role, utt=client.utt_id)
+            client.utt_seq += 1  # drops any partial still in flight
+        self.logger.write("mute", role=client.role, muted=muted)
+        await self.hub.broadcast("mic_state", role=client.role, muted=muted)
+
     async def _partial(self, client: Client, pcm: bytes, utt_id: str) -> None:
         """Live caption of the turn in progress. Dropped if the turn has
         already ended, so a slow partial never overwrites the final text."""
@@ -364,6 +419,10 @@ class TourSession:
                 self.hub.stt_pool, self.engines.stt.transcribe, pcm, hint, client.partial_lang
             )
             if not result.text or utt_id != client.utt_id or not client.vad.in_speech:
+                return
+            # The laptop mic overhearing a visitor at the guest screen: let the
+            # guest screen's own caption speak for it.
+            if client.role == "guide" and self.hub.guest_speaking_since() is not None:
                 return
             # Lock the turn's language after the first second, so later partials
             # skip detection and the caption does not flicker between languages.
@@ -384,14 +443,12 @@ class TourSession:
 
     async def handle_message(self, client: Client, message: dict[str, Any]) -> None:
         kind = message.get("type")
-        if kind == "set_stop":
+        if kind == "mute":
+            await self.set_muted(client, bool(message.get("muted")))
+        elif kind == "set_stop":
             self.engagement.set_stop(str(message.get("stop") or ""))
             await self.hub.broadcast("tour_state", **self.state())
             await self._send_engagement()
-        elif kind == "set_speaker":
-            mode = str(message.get("mode") or "auto")
-            self.speaker_mode = mode if mode in {"auto", "guide", "guest"} else "auto"
-            await self.hub.broadcast("tour_state", roles={"guide"}, **self.state())
         elif kind == "pin_language":
             lang = languages.normalize(message.get("lang"))
             self.guest_lang_pinned = lang is not None
@@ -400,13 +457,12 @@ class TourSession:
                 self._note_guest_language(lang)
             await self.hub.broadcast("tour_state", **self.state())
         elif kind == "guest_language":
-            # A guest screen chose its language: translate guide lines into it
-            # too, without pinning the tour's detection for everyone else.
+            # The hub already stored the screen's choice on the connection;
+            # translation targets read it from there. Seed the tour's guest
+            # language if nobody has spoken yet.
             lang = languages.normalize(message.get("lang"))
             if lang and lang != self.guide_lang:
-                if lang in self.guest_languages:
-                    self.guest_languages.remove(lang)
-                self.guest_languages.append(lang)
+                self._note_guest_language(lang)
                 if self.guest_lang is None:
                     self.guest_lang = lang
                 await self.hub.broadcast("tour_state", **self.state())
@@ -454,7 +510,13 @@ class TourSession:
                 await self._status("warning", f"Could not process a turn: {exc}")
 
     async def _transcribe_and_process(
-        self, pcm: bytes, role: str, utt_id: str | None = None, ended_at: float | None = None, lang_hint: str | None = None
+        self,
+        pcm: bytes,
+        role: str,
+        utt_id: str | None = None,
+        ended_at: float | None = None,
+        lang_hint: str | None = None,
+        duration_ms: int | None = None,
     ) -> None:
         hint = [code for code in {self.guide_lang, self.guest_lang} if code] if self.guest_lang else None
         started = time.monotonic()
@@ -470,6 +532,13 @@ class TourSession:
             await self.hub.broadcast("listening", active=False, role=role, utt=utt_id)
         self.stt_latencies.append(int((time.monotonic() - started) * 1000))
         if not result.text:
+            if utt_id:
+                await self.hub.broadcast("partial_cancel", utt=utt_id)
+            return
+        # Checked after transcription on purpose: by now the guest screen's
+        # copy of the same speech has arrived even over a slow tunnel.
+        if role == "guide" and ended_at and duration_ms and self.hub.is_crosstalk(ended_at - duration_ms / 1000, ended_at):
+            self.logger.write("crosstalk_dropped", text=result.text[:200])
             if utt_id:
                 await self.hub.broadcast("partial_cancel", utt=utt_id)
             return
@@ -493,16 +562,13 @@ class TourSession:
         )
 
     def resolve_speaker(self, lang: str | None, speaker: str | None, role: str = "guide") -> str:
+        """Who said it is decided by the device, never by language: the
+        laptop mic is always Noor, a guest screen is always a visitor. Typed,
+        blinked and scripted turns say who they are."""
+
         if speaker in {"guide", "guest"}:
             return speaker
-        if self.speaker_mode in {"guide", "guest"}:
-            return self.speaker_mode
-        if lang and lang != self.guide_lang:
-            return "guest"
-        if role == "guest":
-            # The guest screen's own microphone is held by a visitor.
-            return "guest"
-        return "guide"
+        return "guest" if role == "guest" else "guide"
 
     async def process_turn(
         self,
@@ -530,9 +596,7 @@ class TourSession:
             text_guest, ok_guest = text, True
         else:
             text_guide, ok_guide = text, True
-            # A mixed group gets every line in each visitor's language (the
-            # three most recent, to keep CPU translation inside a breath).
-            targets = [code for code in self.guest_languages[-3:] if code != lang]
+            targets = [code for code in self.translation_targets() if code != lang]
             translations, ok_guest = await self._translate_many(text, lang, targets)
             text_guest = translations.get(self.guest_lang or "", text)
 
@@ -566,10 +630,13 @@ class TourSession:
         await self.hub.broadcast("transcript", entry=entry)
         await self._send_engagement()
 
-        if who == "guide" and translations:
-            await self.broadcast_guest_line(text, lang, translations, entry["id"])
-        if who == "guest":
-            self._schedule_coach()
+        if who == "guide":
+            # Always sent, so a guest who shares the guide's language still
+            # gets captions; `lines` then only holds the original.
+            await self.broadcast_guest_line(text, lang, {lang: text, **translations}, entry["id"])
+        # A suggestion after every turn: an answer when a visitor spoke, the
+        # next move when Noor did.
+        self._schedule_coach()
         return entry
 
     async def broadcast_guest_line(self, original: str, lang: str, translations: dict[str, str], turn_id: str) -> None:
@@ -619,6 +686,17 @@ class TourSession:
             self.logger.write("translate_failed", error=str(exc))
             return text, False
 
+    def translation_targets(self) -> list[str]:
+        """Every language a guest screen chose, plus the most recently heard
+        visitor languages. Screen choices always win a place: a guest who
+        picked Japanese gets Japanese even if three other languages were
+        heard since. Capped at five to keep one batch inside a breath."""
+
+        chosen = [code for code in self.hub.screen_languages() if code]
+        heard = [code for code in reversed(self.guest_languages) if code not in chosen]
+        targets = list(dict.fromkeys(chosen + heard[:3]))
+        return [code for code in targets if code][:5]
+
     def _note_guest_language(self, lang: str) -> None:
         if lang and lang != self.guide_lang and lang not in self.guest_languages:
             self.guest_languages.append(lang)
@@ -648,37 +726,97 @@ class TourSession:
             Turn(t["speaker"], t["text_en"], t["source"], t.get("tags") or {})
             for t in self.turns[-12:]
         ]
-        if not turns or turns[-1].speaker != "guest":
+        if not turns:
             return
+        for_turn = self.turns[-1]["id"]
         stop_id = self.engagement.current_stop
-        snapshot = self.engagement.to_json()
+        situation = self.situation()
         await self.hub.broadcast("thinking", roles={"guide"}, active=True)
         started = time.monotonic()
         result: CoachResult | None
         try:
             result = await asyncio.wait_for(
-                self.coach.suggest(
-                    turns,
-                    stop_id,
-                    self.engagement.stop_name(stop_id),
-                    snapshot.get("hot_topic_label"),
-                    use_llm=self.engines.llm_available,
-                ),
+                self.coach.suggest(turns, situation, use_llm=self.engines.llm_available),
                 timeout=COACH_TIMEOUT_S,
             )
         except asyncio.TimeoutError:
-            result = self.coach.rules(turns[-1], stop_id)
+            result = self.coach.rules(turns[-1], situation)
         except asyncio.CancelledError:
             raise
         except Exception as exc:
             self.logger.write("coach_error", error=str(exc))
-            result = self.coach.rules(turns[-1], stop_id)
+            result = self.coach.rules(turns[-1], situation)
         finally:
             await self.hub.broadcast("thinking", roles={"guide"}, active=False)
         self.coach_latencies.append(int((time.monotonic() - started) * 1000))
         if result is None or result.no_update:
             return
-        await self.publish_suggestion(result, self.turns[-1]["id"])
+        if self.turns[-1]["id"] != for_turn:
+            # Someone spoke while this was being written (Noor may already
+            # have answered). The newer turn has its own coach run.
+            self.logger.write("stale_suggestion", text=result.say[:200])
+            return
+        await self.publish_suggestion(result, for_turn)
+
+    def situation(self) -> Situation:
+        """Read the moment from the tour so far: where the group is, how long
+        it has been there, whether visitors are joining in, their mood."""
+
+        e = self.engagement
+        stops = e.stops
+        ids = [s["id"] for s in stops]
+        index = ids.index(e.current_stop) if e.current_stop in ids else 0
+        arrived = next((log["at_ms"] for log in reversed(e.stop_log) if log["stop"] == e.current_stop), None)
+        here = [t for t in self.turns if t.get("stop") == e.current_stop]
+        streak = 0
+        for t in reversed(self.turns):
+            if t["speaker"] != "guide":
+                break
+            streak += 1
+        recent_guest = [t for t in self.turns[-6:] if t["speaker"] == "guest"]
+        last = self.turns[-1] if self.turns else None
+        if last is None:
+            kind = ""
+        elif last["speaker"] == "guest":
+            kind = "guest_question" if (last.get("tags") or {}).get("question") else "guest_statement"
+        elif last.get("deferred"):
+            kind = "guide_deferred"
+        elif len(self.turns) > 1 and self.turns[-2]["speaker"] == "guest" and (self.turns[-2].get("tags") or {}).get("question"):
+            kind = "guide_answer"
+        else:
+            kind = "guide_statement"
+        snapshot = e.to_json()
+        return Situation(
+            stop_id=e.current_stop,
+            stop_name=e.stop_name(e.current_stop),
+            stop_index=index,
+            stop_count=len(stops),
+            next_stop_name=stops[index + 1]["name"] if index + 1 < len(stops) else None,
+            seconds_at_stop=(utc_ms() - arrived) / 1000 if arrived else 0.0,
+            questions_here=e.questions_by_stop.get(e.current_stop or "", 0),
+            guest_turns_here=sum(1 for t in here if t["speaker"] == "guest"),
+            guide_streak=streak,
+            hot_topic=snapshot.get("hot_topic_label"),
+            tired=self._still_tired(),
+            delighted=sum(1 for t in recent_guest if (t.get("tags") or {}).get("mood") == "positive") >= 2,
+            blink_guest=e.blink_turns > 0,
+            unanswered=len(e.deferred),
+            last_kind=kind,
+        )
+
+    def _still_tired(self) -> bool:
+        """A visitor said they were tired or uncomfortable at this stop, and
+        Noor has not offered a rest since. Moving on or a break clears it."""
+
+        rest_words = ("rest", "break", "shade", "water", "sit", "seat", "tea")
+        for t in reversed(self.turns):
+            if t.get("stop") != self.engagement.current_stop:
+                return False
+            if t["speaker"] == "guide" and any(w in t["text_en"].lower() for w in rest_words):
+                return False
+            if t["speaker"] == "guest" and (t.get("tags") or {}).get("mood") == "negative":
+                return True
+        return False
 
     async def publish_suggestion(self, result: CoachResult, for_turn: str) -> dict[str, Any] | None:
         decision = self.filter.filter(result.say)
@@ -700,6 +838,8 @@ class TourSession:
         suggestion = {
             "id": f"s{len(self.suggestions) + 1}",
             "options": options,
+            "situation": result.situation,
+            "after": next((t["speaker"] for t in reversed(self.turns) if t["id"] == for_turn), "guest"),
             "for_turn": for_turn,
             "at_ms": utc_ms(),
             "say_en": decision.text,

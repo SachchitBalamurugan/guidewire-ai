@@ -160,7 +160,8 @@ def _duration_min(tour: dict[str, Any]) -> int | None:
 def analyse_reviews(reviews: list[dict[str, Any]]) -> dict[str, Any]:
     praised: dict[str, set[str]] = defaultdict(set)
     complaints: dict[str, set[str]] = defaultdict(set)
-    quotes: dict[str, list[dict[str, str]]] = defaultdict(list)
+    # Separate quote lists, so a complaint is never illustrated with praise.
+    quotes = {"praised": defaultdict(list), "complaints": defaultdict(list)}
     ratings = [r["rating"] for r in reviews if isinstance(r.get("rating"), (int, float))]
     for review in reviews:
         text = review.get("text_en") or review.get("text") or ""
@@ -179,15 +180,16 @@ def analyse_reviews(reviews: list[dict[str, Any]]) -> dict[str, Any]:
             for aspect, keywords in ASPECTS.items():
                 if not any(_has(clean, k) for k in keywords):
                     continue
-                bucket = praised if pos > neg else complaints if neg > pos else None
-                if bucket is None:
+                kind = "praised" if pos > neg else "complaints" if neg > pos else None
+                if kind is None:
                     continue
+                bucket = praised if kind == "praised" else complaints
                 bucket[aspect].add(review["id"])
-                if len(quotes[aspect]) < 3:
-                    quotes[aspect].append({"id": review["id"], "text": _clip(sentence, 24)})
-    def table(source: dict[str, set[str]]) -> list[dict[str, Any]]:
+                if len(quotes[kind][aspect]) < 3:
+                    quotes[kind][aspect].append({"id": review["id"], "text": _clip(sentence, 24)})
+    def table(source: dict[str, set[str]], kind: str) -> list[dict[str, Any]]:
         return [
-            {"aspect": aspect, "count": len(ids), "ids": sorted(ids, key=_id_num), "quotes": quotes.get(aspect, [])}
+            {"aspect": aspect, "count": len(ids), "ids": sorted(ids, key=_id_num), "quotes": quotes[kind].get(aspect, [])}
             for aspect, ids in sorted(source.items(), key=lambda item: -len(item[1]))
         ]
 
@@ -195,8 +197,8 @@ def analyse_reviews(reviews: list[dict[str, Any]]) -> dict[str, Any]:
         "review_count": len(reviews),
         "avg_rating": round(sum(ratings) / len(ratings), 2) if ratings else None,
         "languages": dict(Counter(r.get("lang") or "en" for r in reviews)),
-        "praised": table(praised),
-        "complaints": table(complaints),
+        "praised": table(praised, "praised"),
+        "complaints": table(complaints, "complaints"),
     }
 
 

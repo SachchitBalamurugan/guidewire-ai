@@ -91,3 +91,64 @@ def test_rules_turn_a_wish_to_return_into_a_booking_step():
     coach = Coach(RulesLLM(), storage.get_profile())
     result = coach.rules(guest_turn("I would like to come back again."), "kitchen")
     assert "WhatsApp" in result.say and result.next_step == "return"
+
+
+from coach import Situation
+
+
+def guide_turn(text):
+    return Turn("guide", text, "voice", {})
+
+
+def sit(**kw):
+    base = dict(stop_id="grove", stop_name="Olive grove", stop_index=1, stop_count=5, next_stop_name="Stone olive press")
+    base.update(kw)
+    return Situation(**base)
+
+
+def test_after_guide_quiet_group_gets_invited_in():
+    coach = Coach(RulesLLM(), storage.get_profile())
+    r = coach.rules(guide_turn("These are our olive trees."), sit(guide_streak=2, last_kind="guide_statement"))
+    assert r.say == "Do any of you grow fruit trees or olives at home?"
+    assert r.situation.startswith("Quiet group")
+    assert any(o["label"] == "Try something" for o in r.options)
+
+
+def test_after_guide_deferral_keeps_things_moving():
+    coach = Coach(RulesLLM(), storage.get_profile())
+    r = coach.rules(guide_turn("I'll check."), sit(stop_id="press", stop_name="Stone olive press", last_kind="guide_deferred", guest_turns_here=1))
+    assert r.say.startswith("While I find that out for you")
+
+
+def test_tired_guests_get_a_break_and_closing_runs_in_order():
+    coach = Coach(RulesLLM(), storage.get_profile())
+    r = coach.rules(guide_turn("This is the herb garden."), sit(tired=True, guest_turns_here=1))
+    assert "break" in r.say
+    closing = sit(stop_id="kitchen", stop_name="Courtyard lunch", stop_index=4, next_stop_name=None, guest_turns_here=1, last_kind="guide_statement")
+    lines = [coach.rules(guide_turn(f"Line {i}."), closing).say for i in range(3)]
+    assert "favourite part" in lines[0] and "review" in lines[1] and "see you again" in lines[2]
+
+
+def test_coach_does_not_repeat_itself():
+    coach = Coach(RulesLLM(), storage.get_profile())
+    s = sit(guide_streak=2, last_kind="guide_statement")
+    first = coach.rules(guide_turn("Look at these trees."), s).say
+    second = coach.rules(guide_turn("They are very old."), s).say
+    assert first != second
+
+
+def test_product_already_priced_by_noor_is_not_pitched_again():
+    coach = Coach(RulesLLM(), storage.get_profile())
+    coach.observe(guide_turn("The 500 ml bottle is 8 JOD and the litre is 14 JOD."))
+    s = sit(stop_id="press", stop_name="Stone olive press", questions_here=3, guest_turns_here=3, last_kind="guide_answer")
+    r = coach.rules(guide_turn("Yes, it's cold pressed."), s)
+    assert "8 JOD" not in r.say and "14 JOD" not in r.say
+
+
+def test_blink_answers_stay_complete_with_a_yes_no_option():
+    coach = Coach(RulesLLM(), storage.get_profile())
+    t = guest_turn("I would like to come back again.", "kitchen")
+    t.source = "blink"
+    r = coach.rules(t, sit(stop_id="kitchen", stop_name="Courtyard lunch", stop_index=4, blink_guest=True))
+    assert "WhatsApp" in r.say
+    assert any("blink YES or NO" in o["say"] for o in r.options)
