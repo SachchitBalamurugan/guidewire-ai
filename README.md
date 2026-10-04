@@ -49,6 +49,7 @@ About **3 GB** in total, no GPU. Speech recognition also identifies the language
 - **Grounded.** The co-pilot only uses the farm briefing and what guests said. It never invents prices, discounts, dates, awards or certifications, and it obeys the *claims never to make* list.
 - **"Not sure" instead of guessing.** If the briefing can't answer, the suggestion says she'll check, marked *Not sure* on her screen. The question is saved under *Questions you had no answer for* so she can add the answer in **My farm**.
 - **Reads the room.** Tired or uncomfortable guests get a break, not a sales pitch.
+- **Guests are told.** The guest screen's welcome explains that the tour is transcribed on the guide's device only, and that they can ask the guide to mute.
 - **Private by default.** Tours, reviews and tips are stored as local JSON in `data/store/` (git-ignored). No accounts and no cloud calls unless Gemini is switched on. Guidewire never sends messages: Noor copies them herself.
 
 ## How the brief's datasets map to features
@@ -155,7 +156,7 @@ share.sh, share.ps1 HTTPS tunnel for the phone demo
 - **Dialect.** Translation uses standard Arabic. Levantine speech and slang will be weaker; collecting Mozilla Common Voice recordings from Jordan would let us measure and fine-tune.
 - **Translation slips.** NLLB sometimes mistranslates short phrases and currency (we have seen "JOD" rendered wrongly in Arabic). Guests' copies are translated directly from the co-pilot's English original to avoid a second hop.
 - **Phones need the laptop.** The models run on one laptop or mini-PC; phones connect to it. A phone-only version would need smaller models.
-- **Consent.** Tours are transcribed on the device. A short notice on the guest screen, with an opt-out, is the next thing to add.
+- **Consent.** The guest screen tells each visitor, before they start, that the tour is transcribed on the guide's device only, and that they can ask the guide to mute. A per-guest opt-out switch would be the next step.
 
 ## Credits
 

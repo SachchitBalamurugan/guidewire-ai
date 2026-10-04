@@ -212,6 +212,8 @@ body.tour-live .tour-status::before { background: #34c759; box-shadow: 0 0 0 3px
 .welcome-card .btn.lg { width: 100%; border-radius: 16px; height: 56px; font-size: 17px; }
 .welcome-quiet { border: 0; background: none; color: var(--ink-3); font-size: 14px; cursor: pointer; padding: 6px 10px; border-radius: 8px; }
 .welcome-quiet:hover { color: var(--ink); }
+.welcome-card .welcome-consent { display: flex; gap: 8px; align-items: flex-start; text-align: left; font-size: 13px; color: var(--ink-3); margin: 4px 0 0; }
+.welcome-consent [data-icon], .welcome-consent svg { flex: none; width: 16px; height: 16px; margin-top: 2px; }
 .ring span svg { width: 22px; height: 22px; color: var(--danger-c); }
 .pending .preview svg { width: 15px; height: 15px; margin-right: 4px; vertical-align: -2px; }
 
