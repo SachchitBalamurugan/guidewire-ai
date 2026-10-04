@@ -1,4 +1,4 @@
-"""Noor Guide server. A lean fork of orbit.ai's app.py: no auth, billing or
+"""Guidewire server. A lean fork of orbit.ai's app.py: no auth, billing or
 Firestore, because it runs on the operator's own device."""
 
 from __future__ import annotations

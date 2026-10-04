@@ -3,7 +3,7 @@ import { DEFAULT_BLINK, type BlinkParams } from "./blinkDetector";
 
 /**
  * The slice of Bolne Sathi's settings that the blink path needs. The original also carried the
- * voice-matcher thresholds and speaker profiles, which Noor Guide does not ship.
+ * voice-matcher thresholds and speaker profiles, which Guidewire does not ship.
  */
 export type Settings = {
   morse: MorseTiming;

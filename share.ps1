@@ -1,4 +1,4 @@
-# Starts Noor Guide and a temporary HTTPS tunnel so a phone or tablet can open
+# Starts Guidewire and a temporary HTTPS tunnel so a phone or tablet can open
 # the guest screen with camera and microphone access.
 # Usage:  powershell -ExecutionPolicy Bypass -File share.ps1 [-Port 8000]
 # Anyone with the printed link can open the app while this window is running.
